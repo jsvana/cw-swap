@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -42,7 +42,7 @@
 
 /* Begin PBXFileReference section */
 		05F0915EDCABA747CF38229D /* ListingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingStore.swift; sourceTree = "<group>"; };
-		0D1C7B231272763FB740E0D0 /* CWSwap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CWSwap.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0D1C7B231272763FB740E0D0 /* CWSwap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CWSwap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1341E48777405EDB736A28FB /* BrowseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseView.swift; sourceTree = "<group>"; };
 		1D23E93AA0EF6AB89F541CA1 /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
 		25EDD7B2D38399CB8C913A8C /* ListingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingSource.swift; sourceTree = "<group>"; };
@@ -252,6 +252,7 @@
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					0E985423B5CF36F043DFFADF = {
+						DevelopmentTeam = 7UE4RDLUSX;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -270,6 +271,7 @@
 				77E7C5C9EE932A1506B8ED51 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				707EE913B1F2D34C9DDF63E7 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (

@@ -44,12 +44,23 @@ struct ContentView: View {
 }
 
 struct ConversationsPlaceholderView: View {
+    @State private var authViewModel = AuthViewModel()
+
     var body: some View {
-        ContentUnavailableView(
-            "Messages",
-            systemImage: "message",
-            description: Text("Log in to your QRZ account to message sellers.")
-        )
-        .navigationTitle("Messages")
+        if authViewModel.isLoggedIn {
+            ContentUnavailableView(
+                "Coming Soon",
+                systemImage: "message",
+                description: Text("Messaging will be available in a future update.")
+            )
+            .navigationTitle("Messages")
+        } else {
+            ContentUnavailableView(
+                "Messages",
+                systemImage: "message",
+                description: Text("Log in to your QRZ account to message sellers.")
+            )
+            .navigationTitle("Messages")
+        }
     }
 }
