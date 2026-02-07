@@ -37,6 +37,8 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `Models/ListingsPage.swift` | Pagination wrapper (total, page, perPage, hasMore) |
 | `Models/CategoryInfo.swift` | Category with listing count for category chips |
 | `Models/PersistedListing.swift` | SwiftData @Model for offline caching + bookmarks, converts to/from Listing |
+| `Models/Conversation.swift` | Conversation model (id, title, slug, participants, dates) for QRZ private messages |
+| `Models/Message.swift` | Message model (id, author, body, date) for conversation threads |
 
 ### Services
 
@@ -44,7 +46,7 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 |------|---------|
 | `Services/PriceExtractor.swift` | Regex-based price extraction ported from Rust (amount, OBO, shipping detection) |
 | `Services/KeychainManager.swift` | Wraps KeychainAccess for QRZ username/password storage |
-| `Services/QRZScraper.swift` | QRZ Forums scraper (Sendable): login, listing page, thread detail, SwiftSoup parsing |
+| `Services/QRZScraper.swift` | QRZ Forums scraper (Sendable): login, listing page, thread detail, conversations, SwiftSoup parsing |
 | `Services/QTHScraper.swift` | QTH.com scraper (Sendable): listing page, detail page, SwiftSoup parsing |
 | `Services/ScrapingService.swift` | Coordinates both scrapers: fetch, filter, sort listings; static categories |
 | `Services/AuthenticationService.swift` | QRZ login/logout, Keychain credential storage, reauthentication |
@@ -57,6 +59,9 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `ViewModels/ListingsViewModel.swift` | Browse/search state: scraping + SwiftData cache, filters, pagination, sort |
 | `ViewModels/ListingDetailViewModel.swift` | Single listing detail: refresh, bookmark toggle via ListingStore |
 | `ViewModels/AuthViewModel.swift` | QRZ login/logout state: username, password, loading, error |
+| `ViewModels/ConversationsViewModel.swift` | Conversations list state: scraping, loading, auth gate |
+| `ViewModels/ConversationDetailViewModel.swift` | Message thread state: messages, reply sending |
+| `ViewModels/NewConversationViewModel.swift` | New conversation form state: recipient, title, message, send |
 
 ### Views
 
@@ -67,7 +72,10 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `Views/Browse/ListingCardView.swift` | Compact listing card: thumbnail, status badge, price, callsign, source badge |
 | `Views/Search/SearchView.swift` | Searchable text field, filter chips, paginated results |
 | `Views/Search/FilterSheetView.swift` | Filter sheet: category, source, price range, has-photos toggle |
-| `Views/Detail/ListingDetailView.swift` | Full listing detail: image carousel, price, callsign, description, bookmark, share |
+| `Views/Detail/ListingDetailView.swift` | Full listing detail: image carousel, price, callsign, description, bookmark, share, contact seller |
+| `Views/Messages/ConversationsView.swift` | Conversation list with login gate, ConversationRowView, pull-to-refresh |
+| `Views/Messages/ConversationDetailView.swift` | Chat-style message thread with MessageBubbleView and reply bar |
+| `Views/Messages/NewConversationView.swift` | New conversation form sheet, pre-fillable for "Contact Seller" flow |
 | `Views/Saved/SavedView.swift` | Bookmarked listings from SwiftData with swipe-to-remove |
 | `Views/Settings/SettingsView.swift` | Settings form with QRZ account link and app info |
 | `Views/Settings/QRZLoginView.swift` | QRZ login form with Keychain-backed credential storage |

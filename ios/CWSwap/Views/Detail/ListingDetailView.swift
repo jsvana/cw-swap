@@ -3,8 +3,11 @@ import SwiftUI
 struct ListingDetailView: View {
     @State private var viewModel: ListingDetailViewModel
     @State private var showingContactSheet = false
+    @State private var showingLoginAlert = false
     @State private var selectedImageIndex = 0
     @Environment(\.modelContext) private var modelContext
+
+    private let authService = AuthenticationService()
 
     init(listing: Listing) {
         _viewModel = State(initialValue: ListingDetailViewModel(listing: listing))
@@ -126,7 +129,11 @@ struct ListingDetailView: View {
 
                 // Contact seller button
                 Button {
-                    showingContactSheet = true
+                    if authService.isLoggedIn {
+                        showingContactSheet = true
+                    } else {
+                        showingLoginAlert = true
+                    }
                 } label: {
                     Label("Contact Seller", systemImage: "message")
                         .font(.subheadline.weight(.medium))
@@ -134,7 +141,15 @@ struct ListingDetailView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(.green)
                 .sheet(isPresented: $showingContactSheet) {
-                    ContactSellerSheet(listing: listing)
+                    NewConversationView(
+                        recipient: listing.callsign,
+                        title: "Re: \(listing.title)"
+                    )
+                }
+                .alert("Login Required", isPresented: $showingLoginAlert) {
+                    Button("OK") {}
+                } message: {
+                    Text("Log in to your QRZ account in Settings to contact sellers.")
                 }
             }
         }
@@ -194,40 +209,3 @@ struct ListingDetailView: View {
     }
 }
 
-struct ContactSellerSheet: View {
-    let listing: Listing
-    @Environment(\.dismiss) private var dismiss
-    @State private var message = ""
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("To") {
-                    Text(listing.callsign)
-                        .font(.body.monospaced())
-                }
-                Section("Subject") {
-                    Text(listing.title)
-                }
-                Section("Message") {
-                    TextEditor(text: $message)
-                        .frame(minHeight: 120)
-                }
-            }
-            .navigationTitle("Contact Seller")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Send") {
-                        // TODO: Send via API
-                        dismiss()
-                    }
-                    .disabled(message.isEmpty)
-                }
-            }
-        }
-    }
-}

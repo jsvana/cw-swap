@@ -320,7 +320,252 @@ final class QRZScraper: Sendable {
         )
     }
 
+    // MARK: - Conversations
+
+    func scrapeConversations() async throws -> [Conversation] {
+        let url = URL(string: "\(Self.qrzBase)?conversations/")!
+        let (data, _) = try await session.data(from: url)
+        guard let html = String(data: data, encoding: .utf8) else {
+            throw ScraperError.parseFailed("Could not decode conversations HTML")
+        }
+        return try parseConversationsList(html: html)
+    }
+
+    func scrapeConversation(id: String, slug: String) async throws -> [Message] {
+        let url = URL(string: "\(Self.qrzBase)?conversations/\(slug).\(id)/")!
+        let (data, _) = try await session.data(from: url)
+        guard let html = String(data: data, encoding: .utf8) else {
+            throw ScraperError.parseFailed("Could not decode conversation HTML")
+        }
+        return try parseConversationMessages(html: html, conversationId: id)
+    }
+
+    func replyToConversation(id: String, slug: String, message: String) async throws {
+        // GET conversation page to extract tokens
+        let pageURL = URL(string: "\(Self.qrzBase)?conversations/\(slug).\(id)/")!
+        let (pageData, _) = try await session.data(from: pageURL)
+        let pageHTML = String(data: pageData, encoding: .utf8) ?? ""
+
+        guard let xfToken = extractHiddenInput(html: pageHTML, name: "_xfToken") else {
+            throw ScraperError.parseFailed("Could not find _xfToken for reply")
+        }
+
+        let lastDate = extractHiddenInput(html: pageHTML, name: "last_date") ?? ""
+
+        // POST reply
+        let replyURL = URL(string: "\(Self.qrzBase)?conversations/\(slug).\(id)/insert-reply")!
+        var request = URLRequest(url: replyURL)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let form = [
+            "message_html=\(urlEncode(message))",
+            "last_date=\(urlEncode(lastDate))",
+            "_xfToken=\(urlEncode(xfToken))",
+        ].joined(separator: "&")
+        request.httpBody = form.data(using: .utf8)
+
+        let (_, response) = try await session.data(for: request)
+        if let httpResponse = response as? HTTPURLResponse,
+           httpResponse.statusCode >= 400 {
+            throw ScraperError.networkError(
+                NSError(domain: "QRZScraper", code: httpResponse.statusCode,
+                        userInfo: [NSLocalizedDescriptionKey: "Reply failed with status \(httpResponse.statusCode)"])
+            )
+        }
+    }
+
+    func startConversation(recipient: String, title: String, message: String) async throws {
+        // GET the new conversation page to extract _xfToken
+        let addURL = URL(string: "\(Self.qrzBase)?conversations/add&to=\(urlEncode(recipient))&title=\(urlEncode(title))")!
+        let (pageData, _) = try await session.data(from: addURL)
+        let pageHTML = String(data: pageData, encoding: .utf8) ?? ""
+
+        guard let xfToken = extractHiddenInput(html: pageHTML, name: "_xfToken") else {
+            throw ScraperError.parseFailed("Could not find _xfToken for new conversation")
+        }
+
+        // POST to create conversation
+        let insertURL = URL(string: "\(Self.qrzBase)?conversations/insert")!
+        var request = URLRequest(url: insertURL)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        let form = [
+            "recipients=\(urlEncode(recipient))",
+            "title=\(urlEncode(title))",
+            "message_html=\(urlEncode(message))",
+            "_xfToken=\(urlEncode(xfToken))",
+        ].joined(separator: "&")
+        request.httpBody = form.data(using: .utf8)
+
+        let (_, response) = try await session.data(for: request)
+        if let httpResponse = response as? HTTPURLResponse,
+           httpResponse.statusCode >= 400 {
+            throw ScraperError.networkError(
+                NSError(domain: "QRZScraper", code: httpResponse.statusCode,
+                        userInfo: [NSLocalizedDescriptionKey: "Start conversation failed with status \(httpResponse.statusCode)"])
+            )
+        }
+    }
+
+    // MARK: - Conversation Parsing
+
+    private func parseConversationsList(html: String) throws -> [Conversation] {
+        let document = try SwiftSoup.parse(html)
+        let items = try document.select("li.discussionListItem")
+
+        var conversations: [Conversation] = []
+
+        for item in items {
+            guard let idAttr = try? item.attr("id"),
+                  idAttr.hasPrefix("conversation-") else {
+                continue
+            }
+            let id = String(idAttr.replacingOccurrences(of: "conversation-", with: ""))
+
+            let starterCallsign = (try? item.attr("data-author")) ?? ""
+
+            // Title and slug from the link
+            guard let titleLink = try item.select("h3.title a[href*=conversations/]").first() else {
+                continue
+            }
+            let title = try titleLink.text().trimmingCharacters(in: .whitespaces)
+            let href = try titleLink.attr("href")
+            let slug = Self.conversationSlugFromURL(href, id: id)
+
+            // Participants from .posterDate .username elements
+            let usernameEls = try item.select(".posterDate .username")
+            let participants = try usernameEls.compactMap { el -> String? in
+                let name = try el.text().trimmingCharacters(in: .whitespaces)
+                return name.isEmpty ? nil : name
+            }
+
+            // Created date - try abbr[data-time] first, then span.DateTime[title]
+            let createdDate: Date
+            if let dateEl = try item.select(".posterDate abbr.DateTime[data-time]").first(),
+               let timestamp = Int64(try dateEl.attr("data-time")) {
+                createdDate = Date(timeIntervalSince1970: TimeInterval(timestamp))
+            } else if let dateEl = try item.select(".posterDate span.DateTime[title]").first() {
+                createdDate = Self.parseXenForoDateTitle(try dateEl.attr("title"))
+            } else {
+                createdDate = Date()
+            }
+
+            // Reply count from dl.major dd
+            let replyCount = try item.select("dl.major dd").first()
+                .map { try $0.text().replacingOccurrences(of: ",", with: "") }
+                .flatMap { Int($0) } ?? 0
+
+            // Participant count from dl.minor dd
+            let participantCount = try item.select("dl.minor dd").first()
+                .map { try $0.text().replacingOccurrences(of: ",", with: "") }
+                .flatMap { Int($0) } ?? 0
+
+            // Last poster and date from .lastPostInfo
+            let lastPoster = try item.select(".lastPostInfo .username").first()
+                .map { try $0.text().trimmingCharacters(in: .whitespaces) } ?? ""
+
+            let lastReplyDate: Date
+            if let dateEl = try item.select(".lastPostInfo abbr.DateTime[data-time]").first(),
+               let timestamp = Int64(try dateEl.attr("data-time")) {
+                lastReplyDate = Date(timeIntervalSince1970: TimeInterval(timestamp))
+            } else if let dateEl = try item.select(".lastPostInfo span.DateTime[title]").first() {
+                lastReplyDate = Self.parseXenForoDateTitle(try dateEl.attr("title"))
+            } else {
+                lastReplyDate = createdDate
+            }
+
+            // Avatar URL
+            let avatarURL = try item.select(".posterAvatar img").first()
+                .flatMap { try? $0.attr("src") }
+                .map { Self.resolveURL($0) }
+
+            conversations.append(Conversation(
+                id: id,
+                title: title,
+                slug: slug,
+                starterCallsign: starterCallsign,
+                participants: participants,
+                replyCount: replyCount,
+                participantCount: participantCount,
+                lastPoster: lastPoster,
+                createdDate: createdDate,
+                lastReplyDate: lastReplyDate,
+                avatarURL: avatarURL
+            ))
+        }
+
+        return conversations
+    }
+
+    private func parseConversationMessages(html: String, conversationId: String) throws -> [Message] {
+        let document = try SwiftSoup.parse(html)
+        let messageElements = try document.select("ol#messageList li.message")
+
+        var messages: [Message] = []
+
+        for element in messageElements {
+            guard let idAttr = try? element.attr("id"),
+                  idAttr.hasPrefix("message-") else {
+                continue
+            }
+            let messageId = String(idAttr.replacingOccurrences(of: "message-", with: ""))
+            let author = (try? element.attr("data-author")) ?? ""
+
+            // Body text (HTML stripped)
+            let body = try element.select("blockquote.messageText").first()?.text()
+                .trimmingCharacters(in: .whitespaces) ?? ""
+
+            // Date from .messageMeta .DateTime[data-time]
+            let date: Date
+            if let dateEl = try element.select(".messageMeta abbr.DateTime[data-time]").first(),
+               let timestamp = Int64(try dateEl.attr("data-time")) {
+                date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+            } else {
+                date = Date()
+            }
+
+            // Avatar URL
+            let avatarURL = try element.select(".messageUserBlock img").first()
+                .flatMap { try? $0.attr("src") }
+                .map { Self.resolveURL($0) }
+
+            messages.append(Message(
+                id: messageId,
+                conversationId: conversationId,
+                author: author,
+                body: body,
+                date: date,
+                avatarURL: avatarURL
+            ))
+        }
+
+        return messages
+    }
+
     // MARK: - Helpers
+
+    private static func conversationSlugFromURL(_ url: String, id: String) -> String {
+        // URL format: index.php?conversations/some-slug.12345/
+        guard let conversationsPart = url.split(separator: "conversations/").last else { return "" }
+        let str = String(conversationsPart)
+        let suffix = ".\(id)/"
+        if str.hasSuffix(suffix) {
+            return String(str.dropLast(suffix.count))
+        }
+        // Fallback: strip after last dot
+        guard let dotPos = str.lastIndex(of: ".") else { return "" }
+        return String(str[str.startIndex..<dotPos])
+    }
+
+    private static func parseXenForoDateTitle(_ title: String) -> Date {
+        // Format: "Jan 30, 2026 at 7:19 PM"
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "MMM d, yyyy 'at' h:mm a"
+        return formatter.date(from: title) ?? Date()
+    }
 
     private static func slugFromURL(_ url: String) -> String {
         guard let threadsPart = url.split(separator: "threads/").last else { return "" }
