@@ -22,6 +22,7 @@ class ListingsViewModel {
     var priceMin: Double?
     var priceMax: Double?
     var hasPhotoOnly = false
+    var hideSold = true
 
     private var currentPage = 1
 
@@ -45,7 +46,7 @@ class ListingsViewModel {
 
     var hasActiveFilters: Bool {
         selectedCategory != nil || selectedSource != nil || !searchQuery.isEmpty
-            || priceMin != nil || priceMax != nil || hasPhotoOnly
+            || priceMin != nil || priceMax != nil || hasPhotoOnly || !hideSold
     }
 
     func setModelContext(_ context: ModelContext) {
@@ -68,6 +69,7 @@ class ListingsViewModel {
                     priceMin: priceMin,
                     priceMax: priceMax,
                     hasPhoto: hasPhotoOnly ? true : nil,
+                    hideSold: hideSold,
                     sort: sortOption.rawValue
                 )
                 if !cached.isEmpty {
@@ -88,6 +90,7 @@ class ListingsViewModel {
                 priceMin: priceMin,
                 priceMax: priceMax,
                 hasPhoto: hasPhotoOnly ? true : nil,
+                hideSold: hideSold,
                 sort: sortOption.rawValue
             )
             listings = fresh
@@ -121,6 +124,7 @@ class ListingsViewModel {
                 priceMin: priceMin,
                 priceMax: priceMax,
                 hasPhoto: hasPhotoOnly ? true : nil,
+                hideSold: hideSold,
                 sort: sortOption.rawValue
             )
             listings.append(contentsOf: fresh)
@@ -149,5 +153,6 @@ class ListingsViewModel {
         priceMin = nil
         priceMax = nil
         hasPhotoOnly = false
+        hideSold = true
     }
 }

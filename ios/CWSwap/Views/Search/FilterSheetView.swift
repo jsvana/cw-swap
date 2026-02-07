@@ -46,6 +46,10 @@ struct FilterSheetView: View {
 
                 Section {
                     Toggle("Has Photos", isOn: $viewModel.hasPhotoOnly)
+                    Toggle("Show Sold Items", isOn: Binding(
+                        get: { !viewModel.hideSold },
+                        set: { viewModel.hideSold = !$0 }
+                    ))
                 }
 
                 Section("Sort By") {

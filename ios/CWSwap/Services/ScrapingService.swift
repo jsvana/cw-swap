@@ -12,6 +12,7 @@ struct ScrapingService: Sendable {
         priceMin: Double? = nil,
         priceMax: Double? = nil,
         hasPhoto: Bool? = nil,
+        hideSold: Bool = true,
         sort: String? = nil
     ) async throws -> [Listing] {
         var allListings: [Listing] = []
@@ -38,6 +39,10 @@ struct ScrapingService: Sendable {
 
         // Apply in-memory filters
         var filtered = allListings
+
+        if hideSold {
+            filtered = filtered.filter { $0.status != .sold }
+        }
 
         if let category {
             filtered = filtered.filter { $0.category == category }

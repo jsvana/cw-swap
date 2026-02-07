@@ -46,6 +46,7 @@ class ListingStore {
         priceMin: Double? = nil,
         priceMax: Double? = nil,
         hasPhoto: Bool? = nil,
+        hideSold: Bool = true,
         sort: String? = nil
     ) throws -> [Listing] {
         var descriptor = FetchDescriptor<PersistedListing>(
@@ -58,6 +59,9 @@ class ListingStore {
         // Apply filters in-memory (SwiftData predicates have limited expressiveness)
         var filtered = results.map { $0.toListing() }
 
+        if hideSold {
+            filtered = filtered.filter { $0.status != .sold }
+        }
         if let source {
             filtered = filtered.filter { $0.source == source }
         }

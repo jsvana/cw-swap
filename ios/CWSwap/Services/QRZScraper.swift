@@ -224,6 +224,7 @@ final class QRZScraper: Sendable {
         let status: ListingStatus = switch prefixText {
         case "SOLD": .sold
         case "Canceled": .canceled
+        case "For Sale or Trade": .forSaleOrTrade
         default: .forSale
         }
 
