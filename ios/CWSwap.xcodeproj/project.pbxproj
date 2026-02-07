@@ -29,6 +29,7 @@
 		80F9C13CCCA82B8910781444 /* ListingsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD996E8D1A049DB782EF2653 /* ListingsPage.swift */; };
 		82983D46971B3D52EDEAD26A /* ConversationDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1F6E3CCA54D3FBDCF03CA0D /* ConversationDetailViewModel.swift */; };
 		876F88289419EE794BE92884 /* ListingStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 261210032570520E933B51B3 /* ListingStatus.swift */; };
+		93DF3588D07D721C5A132D02 /* ContactInfoExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4814E29DA4EF5802E994A7B1 /* ContactInfoExtractor.swift */; };
 		9B53D95C1E6525951D72FFDB /* ListingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F0915EDCABA747CF38229D /* ListingStore.swift */; };
 		9ED441BB4AC4F8DBE0BC27E6 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 992A4D04C7941ED704691B63 /* AuthViewModel.swift */; };
 		A43BFB174D76312921D2BC8A /* Price.swift in Sources */ = {isa = PBXBuildFile; fileRef = A63E861CCE2B755C83756386 /* Price.swift */; };
@@ -59,6 +60,7 @@
 		3ABDED1384F82D97F1E7565B /* ListingCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingCardView.swift; sourceTree = "<group>"; };
 		3CFC9B9E5F1A27F600D22AF4 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		4492FE6147BB670E8D350331 /* QRZScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRZScraper.swift; sourceTree = "<group>"; };
+		4814E29DA4EF5802E994A7B1 /* ContactInfoExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactInfoExtractor.swift; sourceTree = "<group>"; };
 		58BA94034A304A172243DEF1 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		660B23C49BB2011C6D3B0077 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		67161DA31B5FEE669EE16353 /* ListingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingDetailView.swift; sourceTree = "<group>"; };
@@ -195,6 +197,7 @@
 			isa = PBXGroup;
 			children = (
 				1D23E93AA0EF6AB89F541CA1 /* AuthenticationService.swift */,
+				4814E29DA4EF5802E994A7B1 /* ContactInfoExtractor.swift */,
 				660B23C49BB2011C6D3B0077 /* KeychainManager.swift */,
 				05F0915EDCABA747CF38229D /* ListingStore.swift */,
 				93DF093092D066F15D3C3346 /* PriceExtractor.swift */,
@@ -333,6 +336,7 @@
 				DF2A676EE6B7DE039C6508AB /* BrowseView.swift in Sources */,
 				0C22234D77BF85FFBEAEF83D /* CWSwapApp.swift in Sources */,
 				769310BA08FDAFF8A06CC7F8 /* CategoryInfo.swift in Sources */,
+				93DF3588D07D721C5A132D02 /* ContactInfoExtractor.swift in Sources */,
 				6FD1AC2652C332B15B9C78AD /* ContentView.swift in Sources */,
 				00FCFBD3DBC5D399443F16C3 /* Conversation.swift in Sources */,
 				5C852AAA97AE239357062BCE /* ConversationDetailView.swift in Sources */,

@@ -18,6 +18,9 @@ struct Listing: Identifiable, Hashable, Codable, Sendable {
     let dateModified: Date?
     let replies: Int
     let views: Int
+    let contactEmail: String?
+    let contactPhone: String?
+    let contactMethods: [String]
 
     enum CodingKeys: String, CodingKey {
         case id, source, title, description, status, callsign, price, replies, views, category
@@ -28,9 +31,13 @@ struct Listing: Identifiable, Hashable, Codable, Sendable {
         case photoUrls = "photo_urls"
         case datePosted = "date_posted"
         case dateModified = "date_modified"
+        case contactEmail = "contact_email"
+        case contactPhone = "contact_phone"
+        case contactMethods = "contact_methods"
     }
 
     var hasPhotos: Bool { !photoUrls.isEmpty }
+    var hasContactInfo: Bool { contactEmail != nil || contactPhone != nil || !contactMethods.isEmpty }
 
     var firstPhotoUrl: URL? {
         photoUrls.first.flatMap { URL(string: $0) }

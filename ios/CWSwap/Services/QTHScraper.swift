@@ -10,49 +10,15 @@ final class QTHScraper: Sendable {
         self.session = URLSession(configuration: config)
     }
 
-    // MARK: - Category Page
+    // MARK: - Listing Page
 
-    func scrapeListingPage(page: Int) async throws -> [Listing] {
-        let url = URL(string: "https://swap.qth.com/c_hamfest.php?page=\(page)")!
+    func scrapeFullPage(page: Int) async throws -> [Listing] {
+        let url = URL(string: "https://swap.qth.com/all.php?perpage=10&sort=date&page=\(page)")!
         let (data, _) = try await session.data(from: url)
         guard let html = String(data: data, encoding: .utf8) else {
             throw ScraperError.parseFailed("Could not decode QTH listing page")
         }
         return try parseListingPage(html: html)
-    }
-
-    // MARK: - Detail Page
-
-    func scrapeDetail(id: String) async throws -> Listing {
-        let url = URL(string: "https://swap.qth.com/view_ad.php?counter=\(id)")!
-        let (data, _) = try await session.data(from: url)
-        guard let html = String(data: data, encoding: .utf8) else {
-            throw ScraperError.parseFailed("Could not decode QTH detail page")
-        }
-        return try parseDetailPage(html: html, id: id)
-    }
-
-    // MARK: - Full Page Scrape
-
-    func scrapeFullPage(page: Int) async throws -> [Listing] {
-        let summaries = try await scrapeListingPage(page: page)
-        var listings: [Listing] = []
-
-        for summary in summaries {
-            // Extract the counter ID from the listing ID
-            let counterId = summary.id.replacingOccurrences(of: "qth:", with: "")
-            do {
-                let detail = try await scrapeDetail(id: counterId)
-                listings.append(detail)
-            } catch {
-                // Fall back to summary if detail fails
-                listings.append(summary)
-            }
-            // Rate limit
-            try await Task.sleep(for: .seconds(1))
-        }
-
-        return listings
     }
 
     // MARK: - Parsing
@@ -61,119 +27,131 @@ final class QTHScraper: Sendable {
         let document = try SwiftSoup.parse(html)
         var listings: [Listing] = []
 
-        // QTH uses table rows for listings
-        let rows = try document.select("table tr")
+        // QTH uses <DL> definition lists: <DT> has title/status, <DD>s have description, metadata, actions
+        let dtElements = try document.select("dl > dt")
 
-        for row in rows {
-            let links = try row.select("a[href*=view_ad.php]")
-            guard let link = links.first() else { continue }
+        for dt in dtElements {
+            // Title from <DT> > B > font or <DT> > B
+            let titleElement = try dt.select("b font").first() ?? dt.select("b").first()
+            guard let titleEl = titleElement else { continue }
+            let rawTitle = try titleEl.text().trimmingCharacters(in: .whitespaces)
+            if rawTitle.isEmpty { continue }
 
-            let href = try link.attr("href")
-            guard let counterId = extractCounterId(from: href) else { continue }
+            // Extract listing ID from view_ad.php links in this DT or its sibling DDs
+            var counterId: String?
+            let dtLinks = try dt.select("a[href*=view_ad.php]")
+            for link in dtLinks {
+                let href = try link.attr("href")
+                if let id = extractCounterId(from: href) {
+                    counterId = id
+                    break
+                }
+            }
 
-            let title = try link.text().trimmingCharacters(in: .whitespaces)
-            if title.isEmpty { continue }
+            // Gather sibling DD elements after this DT
+            var ddElements: [Element] = []
+            var sibling = try dt.nextElementSibling()
+            while let dd = sibling, dd.tagName() == "dd" {
+                ddElements.append(dd)
+                sibling = try dd.nextElementSibling()
+            }
 
-            // Try to extract callsign and price from adjacent cells
-            let cells = try row.select("td")
-            let callsign = cells.count > 1 ? (try? cells[1].text().trimmingCharacters(in: .whitespaces)) ?? "" : ""
+            // If no counter ID from DT, try DD links
+            if counterId == nil {
+                for dd in ddElements {
+                    let links = try dd.select("a[href*=view_ad.php]")
+                    for link in links {
+                        let href = try link.attr("href")
+                        if let id = extractCounterId(from: href) {
+                            counterId = id
+                            break
+                        }
+                    }
+                    if counterId != nil { break }
+                }
+            }
 
-            let fullText = try row.text()
-            let price = PriceExtractor.extractPrice(from: fullText)
+            guard let id = counterId else { continue }
+
+            // First DD: description text
+            let description: String
+            if let firstDD = ddElements.first {
+                description = try firstDD.text().trimmingCharacters(in: .whitespaces)
+            } else {
+                description = ""
+            }
+
+            // Second DD: metadata — callsign, date, listing info
+            var callsign = ""
+            var datePosted = Date()
+            if ddElements.count > 1 {
+                let metaDD = ddElements[1]
+                // Callsign from link to callsign lookup
+                if let callLink = try metaDD.select("a").first(where: { el in
+                    let href = try el.attr("href")
+                    return href.contains("callsign") || href.contains("qrz.com") || href.contains("qth.com")
+                }) {
+                    callsign = try callLink.text().trimmingCharacters(in: .whitespaces).uppercased()
+                }
+                // If no callsign link, try text pattern
+                if callsign.isEmpty {
+                    let metaText = try metaDD.text()
+                    callsign = extractCallsign(from: metaText)
+                }
+                // Date from "Submitted on MM/DD/YY" or "MM/DD/YYYY"
+                let metaText = try metaDD.text()
+                datePosted = extractDate(from: metaText)
+            }
+
+            // Check for photo indicator (camera icon or photo link)
+            var photoUrls: [String] = []
+            let allText = try dt.html() + ddElements.map { try $0.html() }.joined()
+            if allText.contains("camera") || allText.contains("photo") || allText.contains("image") {
+                // Photo available — link to detail page serves as photo source
+                photoUrls = ["https://swap.qth.com/view_ad.php?counter=\(id)"]
+            }
+
+            // Check for SOLD status
+            let dtText = try dt.text().uppercased()
+            let status: ListingStatus = dtText.contains("SOLD") ? .sold : .forSale
+
+            // Extract price from description
+            let price = PriceExtractor.extractPrice(from: description)
+
+            // Extract contact info from description
+            let contactInfo = ContactInfoExtractor.extractAll(from: description)
+
+            // Infer category from title prefix
+            let category = inferCategory(from: rawTitle)
+
+            // Clean title (remove status prefixes like "FOR SALE:", "SOLD:", etc.)
+            let title = cleanTitle(rawTitle)
 
             listings.append(Listing(
-                id: "qth:\(counterId)",
+                id: "qth:\(id)",
                 source: .qth,
-                sourceUrl: "https://swap.qth.com/view_ad.php?counter=\(counterId)",
+                sourceUrl: "https://swap.qth.com/view_ad.php?counter=\(id)",
                 title: title,
-                description: "",
+                description: description,
                 descriptionHtml: "",
-                status: .forSale,
+                status: status,
                 callsign: callsign,
                 memberId: nil,
                 avatarUrl: nil,
                 price: price,
-                photoUrls: [],
-                category: nil,
-                datePosted: Date(),
+                photoUrls: photoUrls,
+                category: category,
+                datePosted: datePosted,
                 dateModified: nil,
                 replies: 0,
-                views: 0
+                views: 0,
+                contactEmail: contactInfo.email,
+                contactPhone: contactInfo.phone,
+                contactMethods: contactInfo.methods
             ))
         }
 
         return listings
-    }
-
-    private func parseDetailPage(html: String, id: String) throws -> Listing {
-        let document = try SwiftSoup.parse(html)
-
-        // Title - usually in a heading or bold element
-        let title = try document.select("h2, h3, b").first()?.text()
-            .trimmingCharacters(in: .whitespaces) ?? "Untitled"
-
-        // Description from main content area
-        let bodyText = try document.body()?.text() ?? ""
-
-        // Extract callsign — look for "by CALLSIGN" pattern
-        let callsignRegex = try! NSRegularExpression(pattern: #"by\s+([A-Z0-9]{3,10})\b"#)
-        let callsign: String
-        let nsBody = bodyText as NSString
-        if let match = callsignRegex.firstMatch(in: bodyText, range: NSRange(location: 0, length: nsBody.length)),
-           let range = Range(match.range(at: 1), in: bodyText) {
-            callsign = String(bodyText[range])
-        } else {
-            callsign = ""
-        }
-
-        // Extract date — "Submitted on MM/DD/YYYY" pattern
-        let dateRegex = try! NSRegularExpression(pattern: #"Submitted on\s+(\d{1,2}/\d{1,2}/\d{4})"#)
-        let datePosted: Date
-        if let match = dateRegex.firstMatch(in: bodyText, range: NSRange(location: 0, length: nsBody.length)),
-           let range = Range(match.range(at: 1), in: bodyText) {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "M/d/yyyy"
-            datePosted = formatter.date(from: String(bodyText[range])) ?? Date()
-        } else {
-            datePosted = Date()
-        }
-
-        // Photos — image tags in the content
-        var photoUrls: [String] = []
-        let images = try document.select("img[src]")
-        for img in images {
-            let src = try img.attr("src")
-            if src.contains("swap.qth.com") || src.contains("qth.com/images/") {
-                let resolved = src.hasPrefix("http") ? src : "https://swap.qth.com/\(src)"
-                photoUrls.append(resolved)
-            }
-        }
-
-        // Price from body text
-        let price = PriceExtractor.extractPrice(from: bodyText)
-
-        // Status — check for "SOLD" in the page
-        let status: ListingStatus = bodyText.localizedCaseInsensitiveContains("SOLD") ? .sold : .forSale
-
-        return Listing(
-            id: "qth:\(id)",
-            source: .qth,
-            sourceUrl: "https://swap.qth.com/view_ad.php?counter=\(id)",
-            title: title,
-            description: bodyText.prefix(2000).trimmingCharacters(in: .whitespaces),
-            descriptionHtml: "",
-            status: status,
-            callsign: callsign,
-            memberId: nil,
-            avatarUrl: nil,
-            price: price,
-            photoUrls: photoUrls,
-            category: nil,
-            datePosted: datePosted,
-            dateModified: nil,
-            replies: 0,
-            views: 0
-        )
     }
 
     // MARK: - Helpers
@@ -182,5 +160,65 @@ final class QTHScraper: Sendable {
         guard let range = href.range(of: "counter=") else { return nil }
         let id = String(href[range.upperBound...]).trimmingCharacters(in: CharacterSet.decimalDigits.inverted)
         return id.isEmpty ? nil : id
+    }
+
+    private static let callsignRegex = try! NSRegularExpression(
+        pattern: #"\b([A-Z]{1,2}\d[A-Z0-9]*[A-Z])\b"#
+    )
+
+    private func extractCallsign(from text: String) -> String {
+        let range = NSRange(text.startIndex..., in: text)
+        guard let match = Self.callsignRegex.firstMatch(in: text.uppercased(), range: range),
+              let matchRange = Range(match.range(at: 1), in: text.uppercased()) else {
+            return ""
+        }
+        return String(text.uppercased()[matchRange])
+    }
+
+    private static let dateRegex = try! NSRegularExpression(
+        pattern: #"(\d{1,2}/\d{1,2}/\d{2,4})"#
+    )
+
+    private func extractDate(from text: String) -> Date {
+        let range = NSRange(text.startIndex..., in: text)
+        guard let match = Self.dateRegex.firstMatch(in: text, range: range),
+              let matchRange = Range(match.range(at: 1), in: text) else {
+            return Date()
+        }
+        let dateStr = String(text[matchRange])
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        // Try 4-digit year first, then 2-digit
+        formatter.dateFormat = "M/d/yyyy"
+        if let date = formatter.date(from: dateStr) { return date }
+        formatter.dateFormat = "M/d/yy"
+        return formatter.date(from: dateStr) ?? Date()
+    }
+
+    private func inferCategory(from title: String) -> ListingCategory? {
+        let lowered = title.lowercased()
+        if lowered.contains("antenna") { return ListingCategory.hfAntennas }
+        if lowered.contains("amplifier") || lowered.contains("amp ") { return ListingCategory.hfAmplifiers }
+        if lowered.contains("transceiver") || lowered.contains("radio") || lowered.contains("rig") { return ListingCategory.hfRadios }
+        if lowered.contains("key") || lowered.contains("keyer") || lowered.contains("paddle") { return ListingCategory.keys }
+        if lowered.contains("rotor") { return ListingCategory.rotators }
+        if lowered.contains("tower") || lowered.contains("mast") { return ListingCategory.towers }
+        if lowered.contains("meter") || lowered.contains("analyzer") || lowered.contains("dummy load") || lowered.contains("tuner") || lowered.contains("atu") { return ListingCategory.testEquipment }
+        if lowered.contains("mic") || lowered.contains("microphone") || lowered.contains("headset") || lowered.contains("power supply") || lowered.contains("psu") { return ListingCategory.accessories }
+        if lowered.contains("computer") || lowered.contains("interface") || lowered.contains("digital") { return ListingCategory.computers }
+        if lowered.contains("antique") || lowered.contains("vintage") { return ListingCategory.antiqueRadios }
+        return nil
+    }
+
+    private func cleanTitle(_ title: String) -> String {
+        var cleaned = title
+        let prefixes = ["FOR SALE:", "FOR SALE -", "SOLD:", "SOLD -", "FS:", "FS -", "WANTED:", "WTB:"]
+        for prefix in prefixes {
+            if cleaned.uppercased().hasPrefix(prefix) {
+                cleaned = String(cleaned.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)
+                break
+            }
+        }
+        return cleaned
     }
 }

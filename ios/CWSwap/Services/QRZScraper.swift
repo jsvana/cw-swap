@@ -145,7 +145,10 @@ final class QRZScraper: Sendable {
                     datePosted: listing.datePosted,
                     dateModified: listing.dateModified,
                     replies: entry.replies,
-                    views: entry.views
+                    views: entry.views,
+                    contactEmail: listing.contactEmail,
+                    contactPhone: listing.contactPhone,
+                    contactMethods: listing.contactMethods
                 )
                 listings.append(listing)
             } catch {
@@ -299,6 +302,9 @@ final class QRZScraper: Sendable {
         // Extract price from description
         let price = PriceExtractor.extractPrice(from: description)
 
+        // Extract contact info from description
+        let contactInfo = ContactInfoExtractor.extractAll(from: description)
+
         return Listing(
             id: "qrz:\(threadId)",
             source: .qrz,
@@ -316,7 +322,10 @@ final class QRZScraper: Sendable {
             datePosted: datePosted,
             dateModified: dateModified,
             replies: 0,
-            views: 0
+            views: 0,
+            contactEmail: contactInfo.email,
+            contactPhone: contactInfo.phone,
+            contactMethods: contactInfo.methods
         )
     }
 

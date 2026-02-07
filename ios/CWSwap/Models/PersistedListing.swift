@@ -23,6 +23,9 @@ final class PersistedListing {
     var dateModified: Date?
     var replies: Int = 0
     var views: Int = 0
+    var contactEmail: String?
+    var contactPhone: String?
+    var contactMethodsData: Data = Data()
     var dateScraped: Date = Date()
     var isBookmarked: Bool = false
 
@@ -49,11 +52,15 @@ final class PersistedListing {
         self.dateModified = listing.dateModified
         self.replies = listing.replies
         self.views = listing.views
+        self.contactEmail = listing.contactEmail
+        self.contactPhone = listing.contactPhone
+        self.contactMethodsData = (try? JSONEncoder().encode(listing.contactMethods)) ?? Data()
         self.dateScraped = Date()
     }
 
     func toListing() -> Listing {
         let photoUrls = (try? JSONDecoder().decode([String].self, from: photoUrlsData)) ?? []
+        let contactMethods = (try? JSONDecoder().decode([String].self, from: contactMethodsData)) ?? []
         let price: Price? = if let amount = priceAmount, let currency = priceCurrency {
             Price(amount: amount, currency: currency, includesShipping: priceIncludesShipping, obo: priceObo)
         } else {
@@ -77,7 +84,10 @@ final class PersistedListing {
             datePosted: datePosted,
             dateModified: dateModified,
             replies: replies,
-            views: views
+            views: views,
+            contactEmail: contactEmail,
+            contactPhone: contactPhone,
+            contactMethods: contactMethods
         )
     }
 }

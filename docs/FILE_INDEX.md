@@ -45,6 +45,7 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | File | Purpose |
 |------|---------|
 | `Services/PriceExtractor.swift` | Regex-based price extraction ported from Rust (amount, OBO, shipping detection) |
+| `Services/ContactInfoExtractor.swift` | Regex-based contact info extraction: email, phone, payment methods (Zelle, PayPal, etc.) |
 | `Services/KeychainManager.swift` | Wraps KeychainAccess for QRZ username/password storage |
 | `Services/QRZScraper.swift` | QRZ Forums scraper (Sendable): login, listing page, thread detail, conversations, SwiftSoup parsing |
 | `Services/QTHScraper.swift` | QTH.com scraper (Sendable): listing page, detail page, SwiftSoup parsing |

@@ -21,6 +21,9 @@ struct ListingDetailView: View {
                 imageSection
                 headerSection
                 descriptionSection
+                if listing.hasContactInfo {
+                    contactSection
+                }
                 metadataSection
             }
         }
@@ -165,6 +168,45 @@ struct ListingDetailView: View {
             Text(listing.description)
                 .font(.body)
                 .textSelection(.enabled)
+        }
+        .padding(.horizontal)
+    }
+
+    @ViewBuilder
+    private var contactSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Contact Info")
+                .font(.subheadline.weight(.semibold))
+
+            if let email = listing.contactEmail, let url = URL(string: "mailto:\(email)") {
+                Link(destination: url) {
+                    Label(email, systemImage: "envelope")
+                        .font(.body)
+                }
+            }
+
+            if let phone = listing.contactPhone, let url = URL(string: "tel:\(phone.filter(\.isWholeNumber))") {
+                Link(destination: url) {
+                    Label(phone, systemImage: "phone")
+                        .font(.body)
+                }
+            }
+
+            if !listing.contactMethods.isEmpty {
+                HStack(spacing: 6) {
+                    Text("Accepts:")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    ForEach(listing.contactMethods, id: \.self) { method in
+                        Text(method)
+                            .font(.caption.weight(.medium))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                }
+            }
         }
         .padding(.horizontal)
     }

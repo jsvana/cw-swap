@@ -31,6 +31,9 @@ class ListingStore {
                 existing.dateModified = updated.dateModified
                 existing.replies = updated.replies
                 existing.views = updated.views
+                existing.contactEmail = updated.contactEmail
+                existing.contactPhone = updated.contactPhone
+                existing.contactMethodsData = updated.contactMethodsData
                 existing.dateScraped = Date()
             } else {
                 modelContext.insert(PersistedListing(from: listing))
