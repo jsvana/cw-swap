@@ -9,12 +9,16 @@ struct CWSwapApp: App {
             memoryCapacity: 25 * 1024 * 1024,
             diskCapacity: 100 * 1024 * 1024
         )
+        BackgroundRefreshService.register()
     }
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task {
+                    BackgroundRefreshService.scheduleNextRefresh()
+                }
         }
-        .modelContainer(for: [PersistedListing.self])
+        .modelContainer(for: [PersistedListing.self, TriggerAlert.self])
     }
 }

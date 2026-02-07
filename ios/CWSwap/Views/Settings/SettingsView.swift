@@ -11,6 +11,14 @@ struct SettingsView: View {
                 }
             }
 
+            Section("Notifications") {
+                NavigationLink {
+                    AlertsView()
+                } label: {
+                    Label("Alerts", systemImage: "bell.badge")
+                }
+            }
+
             Section("About") {
                 LabeledContent("Version", value: "1.0.0")
                 LabeledContent("Sources", value: "QRZ Swapmeet, QTH.com")
