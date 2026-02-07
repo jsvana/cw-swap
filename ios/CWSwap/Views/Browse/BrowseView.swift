@@ -3,6 +3,7 @@ import SwiftUI
 struct BrowseView: View {
     @State private var viewModel = ListingsViewModel()
     @Environment(\.modelContext) private var modelContext
+    private let authService = AuthenticationService()
 
     var body: some View {
         ScrollView {
@@ -68,6 +69,19 @@ struct BrowseView: View {
                     systemImage: "exclamationmark.triangle",
                     description: Text(error.localizedDescription)
                 )
+            } else if viewModel.listings.isEmpty && !viewModel.isLoading && !authService.isLoggedIn {
+                ContentUnavailableView {
+                    Label("Log In to Browse", systemImage: "person.crop.circle.badge.questionmark")
+                } description: {
+                    Text("Sign in to your QRZ account to browse ham radio listings.")
+                } actions: {
+                    NavigationLink {
+                        QRZLoginView()
+                    } label: {
+                        Text("QRZ Account Settings")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else if viewModel.listings.isEmpty && !viewModel.isLoading {
                 ContentUnavailableView(
                     "No Listings",
