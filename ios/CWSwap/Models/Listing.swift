@@ -33,16 +33,16 @@ struct Listing: Identifiable, Hashable, Codable, Sendable {
     var hasPhotos: Bool { !photoUrls.isEmpty }
 
     var firstPhotoUrl: URL? {
-        photoUrls.first.flatMap { APIClient.shared.proxyImageURL(for: $0) }
+        photoUrls.first.flatMap { URL(string: $0) }
     }
 
-    func proxyPhotoURL(at index: Int) -> URL? {
+    func photoURL(at index: Int) -> URL? {
         guard photoUrls.indices.contains(index) else { return nil }
-        return APIClient.shared.proxyImageURL(for: photoUrls[index])
+        return URL(string: photoUrls[index])
     }
 
-    var proxyAvatarUrl: URL? {
-        avatarUrl.flatMap { APIClient.shared.proxyImageURL(for: $0) }
+    var avatarURL: URL? {
+        avatarUrl.flatMap { URL(string: $0) }
     }
 
     var sourceURL: URL? { URL(string: sourceUrl) }

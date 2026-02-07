@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BrowseView: View {
     @State private var viewModel = ListingsViewModel()
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         ScrollView {
@@ -17,11 +18,11 @@ struct BrowseView: View {
         }
         .refreshable {
             await viewModel.loadListings()
-            await viewModel.loadCategories()
         }
         .task {
+            viewModel.setModelContext(modelContext)
             if viewModel.listings.isEmpty {
-                await viewModel.loadCategories()
+                viewModel.loadCategories()
                 await viewModel.loadListings()
             }
         }
@@ -31,7 +32,7 @@ struct BrowseView: View {
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Categories")
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
                 .padding(.horizontal)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -53,7 +54,7 @@ struct BrowseView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Recent Listings")
-                    .font(.headline)
+                    .font(.subheadline.weight(.semibold))
                 Spacer()
                 if viewModel.isLoading {
                     ProgressView()
@@ -108,8 +109,9 @@ struct CategoryChip: View {
             VStack(spacing: 6) {
                 Image(systemName: info.sfSymbol)
                     .font(.title2)
+                    .foregroundStyle(.blue)
                     .frame(width: 48, height: 48)
-                    .background(.fill.tertiary)
+                    .background(Color(.systemGray6))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
                 Text(info.displayName)

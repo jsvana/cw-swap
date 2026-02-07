@@ -29,7 +29,7 @@ struct ContentView: View {
 
             SwiftUI.Tab("Saved", systemImage: "bookmark", value: AppTab.saved) {
                 NavigationStack {
-                    SavedPlaceholderView()
+                    SavedView()
                 }
             }
 
@@ -51,48 +51,5 @@ struct ConversationsPlaceholderView: View {
             description: Text("Log in to your QRZ account to message sellers.")
         )
         .navigationTitle("Messages")
-    }
-}
-
-struct SavedPlaceholderView: View {
-    var body: some View {
-        ContentUnavailableView(
-            "Saved",
-            systemImage: "bookmark",
-            description: Text("Bookmarked listings and saved searches will appear here.")
-        )
-        .navigationTitle("Saved")
-    }
-}
-
-struct SettingsView: View {
-    @AppStorage(APIClient.serverURLKey) private var serverURL = APIClient.defaultServerURL
-
-    var body: some View {
-        Form {
-            Section("Server") {
-                TextField("Server URL", text: $serverURL)
-                    .textContentType(.URL)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
-
-                if serverURL != APIClient.defaultServerURL {
-                    Button("Reset to Default") {
-                        serverURL = APIClient.defaultServerURL
-                    }
-                }
-            }
-
-            Section("Account") {
-                Label("Log in to QRZ", systemImage: "person.circle")
-            }
-
-            Section("About") {
-                LabeledContent("Version", value: "1.0.0")
-                LabeledContent("Source", value: "QRZ Swapmeet, QTH.com")
-            }
-        }
-        .navigationTitle("Settings")
     }
 }

@@ -1,10 +1,12 @@
 import Foundation
 import Observation
+import SwiftData
 
 @MainActor
 @Observable
 class ListingsViewModel {
-    private let service = ListingsService()
+    private let scrapingService = ScrapingService()
+    private var listingStore: ListingStore?
 
     var listings: [Listing] = []
     var categories: [CategoryInfo] = []
@@ -22,7 +24,6 @@ class ListingsViewModel {
     var hasPhotoOnly = false
 
     private var currentPage = 1
-    private let perPage = 20
 
     enum SortOption: String, CaseIterable, Identifiable, Sendable {
         case newest
@@ -36,8 +37,8 @@ class ListingsViewModel {
             switch self {
             case .newest: "Newest"
             case .oldest: "Oldest"
-            case .priceAsc: "Price: Low → High"
-            case .priceDesc: "Price: High → Low"
+            case .priceAsc: "Price: Low \u{2192} High"
+            case .priceDesc: "Price: High \u{2192} Low"
             }
         }
     }
@@ -47,16 +48,40 @@ class ListingsViewModel {
             || priceMin != nil || priceMax != nil || hasPhotoOnly
     }
 
+    func setModelContext(_ context: ModelContext) {
+        self.listingStore = ListingStore(modelContext: context)
+    }
+
     func loadListings() async {
         guard !isLoading else { return }
         isLoading = true
         error = nil
         currentPage = 1
 
+        // Show cached data immediately
+        if let store = listingStore {
+            do {
+                let cached = try store.fetchCachedListings(
+                    source: selectedSource,
+                    category: selectedCategory,
+                    query: searchQuery.isEmpty ? nil : searchQuery,
+                    priceMin: priceMin,
+                    priceMax: priceMax,
+                    hasPhoto: hasPhotoOnly ? true : nil,
+                    sort: sortOption.rawValue
+                )
+                if !cached.isEmpty {
+                    listings = cached
+                }
+            } catch {
+                // Cache miss is fine, will scrape
+            }
+        }
+
+        // Scrape fresh data in background
         do {
-            let page = try await service.fetchListings(
+            let fresh = try await scrapingService.fetchListings(
                 page: 1,
-                perPage: perPage,
                 source: selectedSource,
                 category: selectedCategory,
                 query: searchQuery.isEmpty ? nil : searchQuery,
@@ -65,10 +90,18 @@ class ListingsViewModel {
                 hasPhoto: hasPhotoOnly ? true : nil,
                 sort: sortOption.rawValue
             )
-            listings = page.listings
-            hasMore = page.hasMore
+            listings = fresh
+            hasMore = !fresh.isEmpty
+
+            // Persist to SwiftData
+            if let store = listingStore {
+                try? store.upsertListings(fresh)
+            }
         } catch {
-            self.error = error
+            // Only show error if we have no cached data
+            if listings.isEmpty {
+                self.error = error
+            }
         }
 
         isLoading = false
@@ -80,9 +113,8 @@ class ListingsViewModel {
 
         let nextPage = currentPage + 1
         do {
-            let page = try await service.fetchListings(
+            let fresh = try await scrapingService.fetchListings(
                 page: nextPage,
-                perPage: perPage,
                 source: selectedSource,
                 category: selectedCategory,
                 query: searchQuery.isEmpty ? nil : searchQuery,
@@ -91,9 +123,13 @@ class ListingsViewModel {
                 hasPhoto: hasPhotoOnly ? true : nil,
                 sort: sortOption.rawValue
             )
-            listings.append(contentsOf: page.listings)
-            hasMore = page.hasMore
+            listings.append(contentsOf: fresh)
+            hasMore = !fresh.isEmpty
             currentPage = nextPage
+
+            if let store = listingStore {
+                try? store.upsertListings(fresh)
+            }
         } catch {
             self.error = error
         }
@@ -101,12 +137,8 @@ class ListingsViewModel {
         isLoading = false
     }
 
-    func loadCategories() async {
-        do {
-            categories = try await service.fetchCategories()
-        } catch {
-            self.error = error
-        }
+    func loadCategories() {
+        categories = scrapingService.fetchCategories()
     }
 
     func clearFilters() {

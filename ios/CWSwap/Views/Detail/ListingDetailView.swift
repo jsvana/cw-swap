@@ -4,6 +4,7 @@ struct ListingDetailView: View {
     @State private var viewModel: ListingDetailViewModel
     @State private var showingContactSheet = false
     @State private var selectedImageIndex = 0
+    @Environment(\.modelContext) private var modelContext
 
     init(listing: Listing) {
         _viewModel = State(initialValue: ListingDetailViewModel(listing: listing))
@@ -29,14 +30,17 @@ struct ListingDetailView: View {
                 }
 
                 Button {
-                    // TODO: Bookmark
+                    viewModel.toggleBookmark()
                 } label: {
-                    Image(systemName: "bookmark")
+                    Image(systemName: viewModel.isBookmarked ? "bookmark.fill" : "bookmark")
                 }
             }
         }
         .refreshable {
             await viewModel.refresh()
+        }
+        .task {
+            viewModel.setModelContext(modelContext)
         }
     }
 
@@ -45,7 +49,7 @@ struct ListingDetailView: View {
         if listing.hasPhotos {
             TabView(selection: $selectedImageIndex) {
                 ForEach(Array(listing.photoUrls.enumerated()), id: \.offset) { index, _ in
-                    if let url = listing.proxyPhotoURL(at: index) {
+                    if let url = listing.photoURL(at: index) {
                         AsyncImage(url: url) { phase in
                             switch phase {
                             case .success(let image):
@@ -66,14 +70,14 @@ struct ListingDetailView: View {
             }
             .tabViewStyle(.page)
             .frame(height: 300)
-            .background(.fill.tertiary)
+            .background(Color(.systemGray5))
         } else {
             Image(systemName: "photo.on.rectangle")
                 .font(.system(size: 48))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
                 .frame(height: 200)
-                .background(.fill.tertiary)
+                .background(Color(.systemGray5))
         }
     }
 
@@ -86,9 +90,9 @@ struct ListingDetailView: View {
                     .font(.caption.bold())
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(listing.status == .sold ? .red.opacity(0.2) : .yellow.opacity(0.2))
-                    .foregroundStyle(listing.status == .sold ? .red : .orange)
-                    .clipShape(Capsule())
+                    .background(listing.status == .sold ? Color.red : Color.orange)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
             }
 
             // Title
@@ -104,7 +108,7 @@ struct ListingDetailView: View {
 
             // Seller info
             HStack(spacing: 8) {
-                if let url = listing.proxyAvatarUrl {
+                if let url = listing.avatarURL {
                     AsyncImage(url: url) { image in
                         image.resizable().aspectRatio(contentMode: .fill)
                     } placeholder: {
@@ -128,6 +132,7 @@ struct ListingDetailView: View {
                         .font(.subheadline.weight(.medium))
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(.green)
                 .sheet(isPresented: $showingContactSheet) {
                     ContactSellerSheet(listing: listing)
                 }
@@ -140,7 +145,7 @@ struct ListingDetailView: View {
     private var descriptionSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Description")
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
 
             Text(listing.description)
                 .font(.body)

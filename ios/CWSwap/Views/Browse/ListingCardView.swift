@@ -36,9 +36,9 @@ struct ListingCardView: View {
                             .font(.caption2.bold())
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(.red.opacity(0.2))
-                            .foregroundStyle(.red)
-                            .clipShape(Capsule())
+                            .background(Color.red)
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 3))
                     }
 
                     Text(listing.title)
@@ -65,7 +65,7 @@ struct ListingCardView: View {
                         .font(.caption2)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1)
-                        .background(.fill.tertiary)
+                        .background(Color.blue.opacity(0.2))
                         .clipShape(Capsule())
 
                     Spacer()
@@ -80,9 +80,8 @@ struct ListingCardView: View {
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background(.background)
+        .background(Color(.systemGray6))
         .clipShape(RoundedRectangle(cornerRadius: 12))
-        .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
     }
 
     private var placeholderImage: some View {
@@ -90,6 +89,6 @@ struct ListingCardView: View {
             .font(.title2)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(.fill.tertiary)
+            .background(Color(.systemGray5))
     }
 }

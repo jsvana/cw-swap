@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct CWSwapApp: App {
@@ -6,5 +7,6 @@ struct CWSwapApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [PersistedListing.self])
     }
 }

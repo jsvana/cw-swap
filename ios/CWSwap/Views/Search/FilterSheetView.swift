@@ -67,6 +67,7 @@ struct FilterSheetView: View {
                         priceMinText = ""
                         priceMaxText = ""
                     }
+                    .foregroundStyle(.red)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Apply") {
@@ -75,6 +76,7 @@ struct FilterSheetView: View {
                         onApply()
                         dismiss()
                     }
+                    .buttonStyle(.borderedProminent)
                 }
             }
             .onAppear {

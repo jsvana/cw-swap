@@ -3,6 +3,7 @@ import SwiftUI
 struct SearchView: View {
     @State private var viewModel = ListingsViewModel()
     @State private var showingFilters = false
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         List {
@@ -61,6 +62,9 @@ struct SearchView: View {
             FilterSheetView(viewModel: viewModel) {
                 Task { await viewModel.loadListings() }
             }
+        }
+        .task {
+            viewModel.setModelContext(modelContext)
         }
     }
 
@@ -139,8 +143,8 @@ struct FilterChip: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background(Color.accentColor.opacity(0.15))
-        .foregroundStyle(Color.accentColor)
+        .background(Color.blue.opacity(0.2))
+        .foregroundStyle(Color.blue)
         .clipShape(Capsule())
     }
 }
