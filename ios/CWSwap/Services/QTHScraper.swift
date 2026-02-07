@@ -119,9 +119,10 @@ final class QTHScraper: Sendable {
             }
 
             // Photo: if there's a camera_icon link in the DT, photo is available
+            // QTH stores images at segamida/<counter>.jpg (deterministic URL)
             let hasPhoto = !dtLinks.isEmpty()
             let photoUrls: [String] = hasPhoto
-                ? ["https://swap.qth.com/view_ad.php?counter=\(id)"]
+                ? ["https://swap.qth.com/segamida/\(id).jpg"]
                 : []
 
             // Status: check DT text for SOLD
@@ -188,9 +189,10 @@ final class QTHScraper: Sendable {
         let dateStr = String(text[matchRange])
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "M/d/yyyy"
-        if let date = formatter.date(from: dateStr) { return date }
+        // Try 2-digit year first — yyyy leniently accepts "26" as year 0026 AD
         formatter.dateFormat = "M/d/yy"
+        if let date = formatter.date(from: dateStr) { return date }
+        formatter.dateFormat = "M/d/yyyy"
         return formatter.date(from: dateStr) ?? Date()
     }
 
