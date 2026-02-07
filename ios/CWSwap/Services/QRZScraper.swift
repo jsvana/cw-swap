@@ -121,10 +121,29 @@ final class QRZScraper: Sendable {
     // MARK: - Full Page Scrape
 
     func scrapeFullPage(page: Int) async throws -> [Listing] {
-        let entries = try await scrapeListingPage(page: page)
         var listings: [Listing] = []
+        try await scrapeFullPage(
+            page: page,
+            onListing: { listing in listings.append(listing) },
+            onProgress: { _, _ in }
+        )
+        return listings
+    }
 
-        for entry in entries where !entry.isSticky {
+    /// Returns total thread count for progress tracking.
+    func scrapeFullPage(
+        page: Int,
+        onListing: (Listing) -> Void,
+        onProgress: (Int, Int) -> Void
+    ) async throws {
+        let entries = try await scrapeListingPage(page: page)
+        let nonSticky = entries.filter { !$0.isSticky }
+        let total = nonSticky.count
+        var completed = 0
+
+        onProgress(0, total)
+
+        for entry in nonSticky {
             let slug = Self.slugFromURL(entry.url)
             do {
                 var listing = try await scrapeThread(threadId: entry.threadId, slug: slug)
@@ -150,16 +169,15 @@ final class QRZScraper: Sendable {
                     contactPhone: listing.contactPhone,
                     contactMethods: listing.contactMethods
                 )
-                listings.append(listing)
+                onListing(listing)
             } catch {
                 // Skip failed threads, continue with others
-                continue
             }
+            completed += 1
+            onProgress(completed, total)
             // Rate limit: 1 request per second
             try await Task.sleep(for: .seconds(1))
         }
-
-        return listings
     }
 
     // MARK: - Parsing

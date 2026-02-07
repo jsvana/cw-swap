@@ -72,13 +72,6 @@ struct SearchView: View {
     private var activeFiltersSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                if let category = viewModel.selectedCategory {
-                    FilterChip(label: category.displayName) {
-                        viewModel.selectedCategory = nil
-                        Task { await viewModel.loadListings() }
-                    }
-                }
-
                 if let source = viewModel.selectedSource {
                     FilterChip(label: source.displayName) {
                         viewModel.selectedSource = nil

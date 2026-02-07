@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 struct Listing: Identifiable, Hashable, Codable, Sendable {
@@ -38,6 +39,20 @@ struct Listing: Identifiable, Hashable, Codable, Sendable {
 
     var hasPhotos: Bool { !photoUrls.isEmpty }
     var hasContactInfo: Bool { contactEmail != nil || contactPhone != nil || !contactMethods.isEmpty }
+
+    var contentHash: String {
+        var parts = [title, description, status.rawValue, callsign]
+        if let price {
+            parts.append("\(price.amount)|\(price.currency)|\(price.includesShipping)|\(price.obo)")
+        }
+        parts.append(contentsOf: photoUrls)
+        if let contactEmail { parts.append(contactEmail) }
+        if let contactPhone { parts.append(contactPhone) }
+        parts.append(contentsOf: contactMethods)
+        let joined = parts.joined(separator: "\u{1F}")
+        let digest = SHA256.hash(data: Data(joined.utf8))
+        return digest.prefix(16).map { String(format: "%02x", $0) }.joined()
+    }
 
     var firstPhotoUrl: URL? {
         photoUrls.first.flatMap { URL(string: $0) }

@@ -27,22 +27,29 @@ final class QTHScraper: Sendable {
         let document = try SwiftSoup.parse(html)
         var listings: [Listing] = []
 
-        // QTH uses <DL> definition lists: <DT> has title/status, <DD>s have description, metadata, actions
-        let dtElements = try document.select("dl > dt")
+        // QTH uses a single <DL> with <DT> for each listing header, followed by <DD>s
+        let dtElements = try document.select("dt")
 
         for dt in dtElements {
-            // Title from <DT> > B > font or <DT> > B
-            let titleElement = try dt.select("b font").first() ?? dt.select("b").first()
-            guard let titleEl = titleElement else { continue }
-            let rawTitle = try titleEl.text().trimmingCharacters(in: .whitespaces)
+            // Each DT contains: icon, <B><font color=0000FF>CATEGORY</font><font> - TITLE</font></B>, optional camera link
+            guard let boldEl = try dt.select("b").first() else { continue }
+            let fontElements = try boldEl.select("font")
+            guard fontElements.size() >= 2 else { continue }
+
+            // First font = category code (e.g., "AMPHF", "RADIOHF", "TEST")
+            let categoryCode = try fontElements.get(0).text().trimmingCharacters(in: .whitespaces)
+
+            // Second font = title with leading " - "
+            let rawTitle = try fontElements.get(1).text()
+                .trimmingCharacters(in: .whitespaces)
+                .replacingOccurrences(of: "^\\s*-\\s*", with: "", options: .regularExpression)
             if rawTitle.isEmpty { continue }
 
-            // Extract listing ID from view_ad.php links in this DT or its sibling DDs
+            // Extract listing ID from view_ad.php camera link in the DT
             var counterId: String?
             let dtLinks = try dt.select("a[href*=view_ad.php]")
             for link in dtLinks {
-                let href = try link.attr("href")
-                if let id = extractCounterId(from: href) {
+                if let id = extractCounterId(from: try link.attr("href")) {
                     counterId = id
                     break
                 }
@@ -51,15 +58,29 @@ final class QTHScraper: Sendable {
             // Gather sibling DD elements after this DT
             var ddElements: [Element] = []
             var sibling = try dt.nextElementSibling()
-            while let dd = sibling, dd.tagName() == "dd" {
+            while let dd = sibling, dd.tagName().lowercased() == "dd" {
                 ddElements.append(dd)
                 sibling = try dd.nextElementSibling()
             }
 
-            // If no counter ID from DT, try DD links
+            // If no counter ID from DT camera link, try DD links
             if counterId == nil {
                 for dd in ddElements {
                     let links = try dd.select("a[href*=view_ad.php]")
+                    for link in links {
+                        if let id = extractCounterId(from: try link.attr("href")) {
+                            counterId = id
+                            break
+                        }
+                    }
+                    if counterId != nil { break }
+                }
+            }
+
+            // Also check contact.php links for listing ID
+            if counterId == nil {
+                for dd in ddElements {
+                    let links = try dd.select("a[href*=contact.php]")
                     for link in links {
                         let href = try link.attr("href")
                         if let id = extractCounterId(from: href) {
@@ -73,7 +94,7 @@ final class QTHScraper: Sendable {
 
             guard let id = counterId else { continue }
 
-            // First DD: description text
+            // First DD: description text (inside <font> tag)
             let description: String
             if let firstDD = ddElements.first {
                 description = try firstDD.text().trimmingCharacters(in: .whitespaces)
@@ -81,50 +102,42 @@ final class QTHScraper: Sendable {
                 description = ""
             }
 
-            // Second DD: metadata — callsign, date, listing info
+            // Second DD: metadata — "Listing #ID - Submitted on DATE by Callsign <a>CALL</a>..."
             var callsign = ""
             var datePosted = Date()
             if ddElements.count > 1 {
                 let metaDD = ddElements[1]
-                // Callsign from link to callsign lookup
-                if let callLink = try metaDD.select("a").first(where: { el in
-                    let href = try el.attr("href")
-                    return href.contains("callsign") || href.contains("qrz.com") || href.contains("qth.com")
-                }) {
+                let metaText = try metaDD.text()
+
+                // Callsign from link to qth.com/callsign.php
+                if let callLink = try metaDD.select("a[href*=callsign]").first() {
                     callsign = try callLink.text().trimmingCharacters(in: .whitespaces).uppercased()
                 }
-                // If no callsign link, try text pattern
-                if callsign.isEmpty {
-                    let metaText = try metaDD.text()
-                    callsign = extractCallsign(from: metaText)
-                }
-                // Date from "Submitted on MM/DD/YY" or "MM/DD/YYYY"
-                let metaText = try metaDD.text()
+
+                // Date from "Submitted on MM/DD/YY"
                 datePosted = extractDate(from: metaText)
             }
 
-            // Check for photo indicator (camera icon or photo link)
-            var photoUrls: [String] = []
-            let allText = try dt.html() + ddElements.map { try $0.html() }.joined()
-            if allText.contains("camera") || allText.contains("photo") || allText.contains("image") {
-                // Photo available — link to detail page serves as photo source
-                photoUrls = ["https://swap.qth.com/view_ad.php?counter=\(id)"]
-            }
+            // Photo: if there's a camera_icon link in the DT, photo is available
+            let hasPhoto = !dtLinks.isEmpty()
+            let photoUrls: [String] = hasPhoto
+                ? ["https://swap.qth.com/view_ad.php?counter=\(id)"]
+                : []
 
-            // Check for SOLD status
+            // Status: check DT text for SOLD
             let dtText = try dt.text().uppercased()
             let status: ListingStatus = dtText.contains("SOLD") ? .sold : .forSale
 
-            // Extract price from description
+            // Price from description
             let price = PriceExtractor.extractPrice(from: description)
 
-            // Extract contact info from description
+            // Contact info from description
             let contactInfo = ContactInfoExtractor.extractAll(from: description)
 
-            // Infer category from title prefix
-            let category = inferCategory(from: rawTitle)
+            // Map QTH category codes to our categories
+            let category = mapCategory(code: categoryCode)
 
-            // Clean title (remove status prefixes like "FOR SALE:", "SOLD:", etc.)
+            // Clean title (strip "FOR SALE:", etc.)
             let title = cleanTitle(rawTitle)
 
             listings.append(Listing(
@@ -162,21 +175,8 @@ final class QTHScraper: Sendable {
         return id.isEmpty ? nil : id
     }
 
-    private static let callsignRegex = try! NSRegularExpression(
-        pattern: #"\b([A-Z]{1,2}\d[A-Z0-9]*[A-Z])\b"#
-    )
-
-    private func extractCallsign(from text: String) -> String {
-        let range = NSRange(text.startIndex..., in: text)
-        guard let match = Self.callsignRegex.firstMatch(in: text.uppercased(), range: range),
-              let matchRange = Range(match.range(at: 1), in: text.uppercased()) else {
-            return ""
-        }
-        return String(text.uppercased()[matchRange])
-    }
-
     private static let dateRegex = try! NSRegularExpression(
-        pattern: #"(\d{1,2}/\d{1,2}/\d{2,4})"#
+        pattern: #"Submitted on\s+(\d{1,2}/\d{1,2}/\d{2,4})"#
     )
 
     private func extractDate(from text: String) -> Date {
@@ -188,31 +188,38 @@ final class QTHScraper: Sendable {
         let dateStr = String(text[matchRange])
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
-        // Try 4-digit year first, then 2-digit
         formatter.dateFormat = "M/d/yyyy"
         if let date = formatter.date(from: dateStr) { return date }
         formatter.dateFormat = "M/d/yy"
         return formatter.date(from: dateStr) ?? Date()
     }
 
-    private func inferCategory(from title: String) -> ListingCategory? {
-        let lowered = title.lowercased()
-        if lowered.contains("antenna") { return ListingCategory.hfAntennas }
-        if lowered.contains("amplifier") || lowered.contains("amp ") { return ListingCategory.hfAmplifiers }
-        if lowered.contains("transceiver") || lowered.contains("radio") || lowered.contains("rig") { return ListingCategory.hfRadios }
-        if lowered.contains("key") || lowered.contains("keyer") || lowered.contains("paddle") { return ListingCategory.keys }
-        if lowered.contains("rotor") { return ListingCategory.rotators }
-        if lowered.contains("tower") || lowered.contains("mast") { return ListingCategory.towers }
-        if lowered.contains("meter") || lowered.contains("analyzer") || lowered.contains("dummy load") || lowered.contains("tuner") || lowered.contains("atu") { return ListingCategory.testEquipment }
-        if lowered.contains("mic") || lowered.contains("microphone") || lowered.contains("headset") || lowered.contains("power supply") || lowered.contains("psu") { return ListingCategory.accessories }
-        if lowered.contains("computer") || lowered.contains("interface") || lowered.contains("digital") { return ListingCategory.computers }
-        if lowered.contains("antique") || lowered.contains("vintage") { return ListingCategory.antiqueRadios }
-        return nil
+    /// Map QTH category codes to ListingCategory.
+    /// Codes seen in HTML: AMPHF, AMPVHF, ANTHF, ANTVHF, RADIOHF, RADIOVHF,
+    /// TOWER, ROTOR, KEY, TEST, COMP, ANTIQUE, ACCESS, MISC
+    private func mapCategory(code: String) -> ListingCategory? {
+        switch code.uppercased() {
+        case "RADIOHF": return .hfRadios
+        case "RADIOVHF": return .vhfUhfRadios
+        case "AMPHF": return .hfAmplifiers
+        case "AMPVHF": return .vhfUhfAmplifiers
+        case "ANTHF": return .hfAntennas
+        case "ANTVHF": return .vhfUhfAntennas
+        case "TOWER": return .towers
+        case "ROTOR": return .rotators
+        case "KEY": return .keys
+        case "TEST": return .testEquipment
+        case "COMP": return .computers
+        case "ANTIQUE": return .antiqueRadios
+        case "ACCESS": return .accessories
+        case "MISC": return .miscellaneous
+        default: return nil
+        }
     }
 
     private func cleanTitle(_ title: String) -> String {
         var cleaned = title
-        let prefixes = ["FOR SALE:", "FOR SALE -", "SOLD:", "SOLD -", "FS:", "FS -", "WANTED:", "WTB:"]
+        let prefixes = ["FOR SALE:", "FOR SALE -", "SOLD:", "SOLD -", "FS:", "FS -", "WANTED:", "WTB:", "FOR SALE/TRADE"]
         for prefix in prefixes {
             if cleaned.uppercased().hasPrefix(prefix) {
                 cleaned = String(cleaned.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces)

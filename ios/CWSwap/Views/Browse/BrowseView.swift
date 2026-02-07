@@ -8,7 +8,8 @@ struct BrowseView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                categorySection
+                sourceFilterSection
+                syncProgressSection
                 recentListingsSection
             }
             .padding(.vertical)
@@ -23,30 +24,42 @@ struct BrowseView: View {
         .task {
             viewModel.setModelContext(modelContext)
             if viewModel.listings.isEmpty {
-                viewModel.loadCategories()
                 await viewModel.loadListings()
             }
         }
     }
 
     @ViewBuilder
-    private var categorySection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Categories")
-                .font(.subheadline.weight(.semibold))
-                .padding(.horizontal)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 12) {
-                    ForEach(viewModel.categories) { info in
-                        CategoryChip(info: info) {
-                            viewModel.selectedCategory = info.category
-                            Task { await viewModel.loadListings() }
-                        }
-                    }
-                }
-                .padding(.horizontal)
+    private var sourceFilterSection: some View {
+        Picker("Source", selection: $viewModel.selectedSource) {
+            Text("All").tag(nil as ListingSource?)
+            ForEach(ListingSource.allCases, id: \.self) { source in
+                Text(source.displayName).tag(source as ListingSource?)
             }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+        .onChange(of: viewModel.selectedSource) {
+            Task { await viewModel.loadListings() }
+        }
+    }
+
+    @ViewBuilder
+    private var syncProgressSection: some View {
+        if viewModel.isSyncing {
+            VStack(spacing: 4) {
+                ProgressView(value: viewModel.syncProgress)
+                    .tint(.blue)
+                Text(viewModel.syncStatus)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal)
+        } else if !viewModel.syncStatus.isEmpty {
+            Text(viewModel.syncStatus)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
         }
     }
 
@@ -57,9 +70,6 @@ struct BrowseView: View {
                 Text("Recent Listings")
                     .font(.subheadline.weight(.semibold))
                 Spacer()
-                if viewModel.isLoading {
-                    ProgressView()
-                }
             }
             .padding(.horizontal)
 
@@ -114,30 +124,3 @@ struct BrowseView: View {
     }
 }
 
-struct CategoryChip: View {
-    let info: CategoryInfo
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                Image(systemName: info.sfSymbol)
-                    .font(.title2)
-                    .foregroundStyle(.blue)
-                    .frame(width: 48, height: 48)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                Text(info.displayName)
-                    .font(.caption)
-                    .lineLimit(1)
-
-                Text("\(info.listingCount)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(width: 80)
-        }
-        .buttonStyle(.plain)
-    }
-}

@@ -4,10 +4,19 @@ struct ScrapingService: Sendable {
     private let qrzScraper = QRZScraper()
     private let qthScraper = QTHScraper()
 
+    struct SyncProgress: Sendable {
+        let completedSteps: Int
+        let totalSteps: Int
+        let source: ListingSource
+
+        var fraction: Double {
+            totalSteps > 0 ? Double(completedSteps) / Double(totalSteps) : 0
+        }
+    }
+
     func fetchListings(
         page: Int = 1,
         source: ListingSource? = nil,
-        category: ListingCategory? = nil,
         query: String? = nil,
         priceMin: Double? = nil,
         priceMax: Double? = nil,
@@ -37,17 +46,83 @@ struct ScrapingService: Sendable {
             }
         }
 
-        // Apply in-memory filters
-        var filtered = allListings
+        return Self.applyFilters(
+            to: allListings,
+            query: query,
+            priceMin: priceMin, priceMax: priceMax,
+            hasPhoto: hasPhoto, hideSold: hideSold, sort: sort
+        )
+    }
 
+    /// Progressive scraping: yields listings as they arrive via AsyncStream.
+    /// QTH arrives as a batch (single request), QRZ arrives one thread at a time.
+    func scrapeProgressively(
+        page: Int = 1,
+        source: ListingSource? = nil
+    ) -> (listings: AsyncStream<Listing>, progress: AsyncStream<SyncProgress>) {
+        let (listingStream, listingCont) = AsyncStream<Listing>.makeStream()
+        let (progressStream, progressCont) = AsyncStream<SyncProgress>.makeStream()
+
+        // Launch the scraping work
+        Task {
+            defer {
+                listingCont.finish()
+                progressCont.finish()
+            }
+
+            // QTH: single request, all at once
+            if source == nil || source == .qth {
+                progressCont.yield(SyncProgress(completedSteps: 0, totalSteps: 1, source: .qth))
+                do {
+                    let qthListings = try await qthScraper.scrapeFullPage(page: page)
+                    for listing in qthListings {
+                        listingCont.yield(listing)
+                    }
+                } catch {
+                    // QTH failure is non-fatal
+                }
+                progressCont.yield(SyncProgress(completedSteps: 1, totalSteps: 1, source: .qth))
+            }
+
+            // QRZ: one thread at a time with progress
+            if source == nil || source == .qrz {
+                do {
+                    try await qrzScraper.scrapeFullPage(
+                        page: page,
+                        onListing: { listing in
+                            listingCont.yield(listing)
+                        },
+                        onProgress: { completed, total in
+                            progressCont.yield(SyncProgress(completedSteps: completed, totalSteps: total, source: .qrz))
+                        }
+                    )
+                } catch {
+                    // QRZ failure is non-fatal
+                }
+            }
+        }
+
+        return (listingStream, progressStream)
+    }
+
+    static func applyFilters(
+        to listings: [Listing],
+        source: ListingSource? = nil,
+        query: String? = nil,
+        priceMin: Double? = nil,
+        priceMax: Double? = nil,
+        hasPhoto: Bool? = nil,
+        hideSold: Bool = true,
+        sort: String? = nil
+    ) -> [Listing] {
+        var filtered = listings
+
+        if let source {
+            filtered = filtered.filter { $0.source == source }
+        }
         if hideSold {
             filtered = filtered.filter { $0.status != .sold }
         }
-
-        if let category {
-            filtered = filtered.filter { $0.category == category }
-        }
-
         if let query, !query.isEmpty {
             let lowered = query.lowercased()
             filtered = filtered.filter {
@@ -56,19 +131,16 @@ struct ScrapingService: Sendable {
                 || $0.callsign.lowercased().contains(lowered)
             }
         }
-
         if let priceMin {
             filtered = filtered.filter { ($0.price?.amount ?? 0) >= priceMin }
         }
         if let priceMax {
             filtered = filtered.filter { ($0.price?.amount ?? Double.infinity) <= priceMax }
         }
-
         if hasPhoto == true {
             filtered = filtered.filter { $0.hasPhotos }
         }
 
-        // Sort
         switch sort {
         case "oldest":
             filtered.sort { $0.datePosted < $1.datePosted }
@@ -76,22 +148,11 @@ struct ScrapingService: Sendable {
             filtered.sort { ($0.price?.amount ?? 0) < ($1.price?.amount ?? 0) }
         case "price_desc":
             filtered.sort { ($0.price?.amount ?? 0) > ($1.price?.amount ?? 0) }
-        default: // newest
+        default:
             filtered.sort { $0.datePosted > $1.datePosted }
         }
 
         return filtered
-    }
-
-    func fetchCategories() -> [CategoryInfo] {
-        ListingCategory.allCases.map { category in
-            CategoryInfo(
-                category: category,
-                displayName: category.displayName,
-                sfSymbol: category.sfSymbol,
-                listingCount: 0
-            )
-        }
     }
 
     func loginQRZ(username: String, password: String) async throws {

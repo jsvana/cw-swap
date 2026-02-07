@@ -26,6 +26,7 @@ final class PersistedListing {
     var contactEmail: String?
     var contactPhone: String?
     var contactMethodsData: Data = Data()
+    var contentHash: String = ""
     var dateScraped: Date = Date()
     var isBookmarked: Bool = false
 
@@ -55,6 +56,7 @@ final class PersistedListing {
         self.contactEmail = listing.contactEmail
         self.contactPhone = listing.contactPhone
         self.contactMethodsData = (try? JSONEncoder().encode(listing.contactMethods)) ?? Data()
+        self.contentHash = listing.contentHash
         self.dateScraped = Date()
     }
 

@@ -11,17 +11,6 @@ struct FilterSheetView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Category") {
-                    Picker("Category", selection: $viewModel.selectedCategory) {
-                        Text("All").tag(nil as ListingCategory?)
-                        ForEach(ListingCategory.allCases) { category in
-                            Label(category.displayName, systemImage: category.sfSymbol)
-                                .tag(category as ListingCategory?)
-                        }
-                    }
-                    .pickerStyle(.navigationLink)
-                }
-
                 Section("Source") {
                     Picker("Source", selection: $viewModel.selectedSource) {
                         Text("All Sources").tag(nil as ListingSource?)

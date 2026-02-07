@@ -6,6 +6,7 @@ enum AppTab: String, Hashable {
 
 struct ContentView: View {
     @State private var selectedTab = AppTab.browse
+    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -40,5 +41,9 @@ struct ContentView: View {
             }
         }
         .tint(.accentColor)
+        .task {
+            let store = ListingStore(modelContext: modelContext)
+            _ = try? store.evictOldListings()
+        }
     }
 }
