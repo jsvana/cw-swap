@@ -1,0 +1,14 @@
+# Rust
+backend/target/
+
+# Xcode
+ios/CWSwap.xcodeproj/xcuserdata/
+ios/CWSwap.xcodeproj/project.xcworkspace/xcuserdata/
+DerivedData/
+*.xcuserstate
+
+# macOS
+.DS_Store
+
+# Environment
+.env
