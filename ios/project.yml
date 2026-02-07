@@ -28,6 +28,10 @@ targets:
     dependencies:
       - package: SwiftSoup
       - package: KeychainAccess
+    info:
+      properties:
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.jsvana.cwswap.refresh
     settings:
       base:
         INFOPLIST_GENERATION_MODE: GeneratedFile
@@ -44,3 +48,7 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+    capabilities:
+      Background Modes:
+        modes:
+          - fetch

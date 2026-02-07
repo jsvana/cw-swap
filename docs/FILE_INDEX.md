@@ -39,6 +39,7 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `Models/PersistedListing.swift` | SwiftData @Model for offline caching + bookmarks, converts to/from Listing |
 | `Models/Conversation.swift` | Conversation model (id, title, slug, participants, dates) for QRZ private messages |
 | `Models/Message.swift` | Message model (id, author, body, date) for conversation threads |
+| `Models/TriggerAlert.swift` | SwiftData @Model for configurable listing alerts: keyword, category, source, price range filters |
 
 ### Services
 
@@ -52,6 +53,8 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `Services/ScrapingService.swift` | Coordinates both scrapers: fetch, filter, sort listings; static categories |
 | `Services/AuthenticationService.swift` | QRZ login/logout, Keychain credential storage, reauthentication |
 | `Services/ListingStore.swift` | SwiftData persistence: upsert, query, bookmark toggle |
+| `Services/NotificationService.swift` | Local notification authorization and delivery for listing alerts |
+| `Services/BackgroundRefreshService.swift` | BGAppRefreshTask: periodic scraping, trigger matching, notification dispatch |
 
 ### ViewModels
 
@@ -63,6 +66,7 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `ViewModels/ConversationsViewModel.swift` | Conversations list state: scraping, loading, auth gate |
 | `ViewModels/ConversationDetailViewModel.swift` | Message thread state: messages, reply sending |
 | `ViewModels/NewConversationViewModel.swift` | New conversation form state: recipient, title, message, send |
+| `ViewModels/AlertsViewModel.swift` | Alerts CRUD state: create, toggle, delete trigger alerts, notification permission |
 
 ### Views
 
@@ -78,8 +82,10 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `Views/Messages/ConversationDetailView.swift` | Chat-style message thread with MessageBubbleView and reply bar |
 | `Views/Messages/NewConversationView.swift` | New conversation form sheet, pre-fillable for "Contact Seller" flow |
 | `Views/Saved/SavedView.swift` | Bookmarked listings from SwiftData with swipe-to-remove |
-| `Views/Settings/SettingsView.swift` | Settings form with QRZ account link and app info |
+| `Views/Settings/SettingsView.swift` | Settings form with QRZ account link, alerts link, and app info |
 | `Views/Settings/QRZLoginView.swift` | QRZ login form with Keychain-backed credential storage |
+| `Views/Settings/AlertsView.swift` | Alerts management: list, toggle, swipe-to-delete trigger alerts |
+| `Views/Settings/AlertFormView.swift` | Alert creation/edit form: name, keyword, category, source, price range |
 
 ## Reference Files
 
