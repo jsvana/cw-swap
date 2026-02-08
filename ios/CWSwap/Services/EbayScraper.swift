@@ -115,11 +115,13 @@ final class EbayScraper: Sendable {
 
     private func mapToListing(_ item: EbayItemSummary) -> Listing {
         var photoUrls: [String] = []
-        if let primary = item.image?.imageUrl {
+        if let primary = item.image?.imageUrl, !primary.isEmpty {
             photoUrls.append(primary)
         }
         if let additional = item.additionalImages {
-            photoUrls.append(contentsOf: additional.map(\.imageUrl))
+            photoUrls.append(contentsOf: additional.compactMap {
+                $0.imageUrl.isEmpty ? nil : $0.imageUrl
+            })
         }
 
         let amount = item.price.flatMap { Double($0.value) }

@@ -55,7 +55,7 @@ struct Listing: Identifiable, Hashable, Codable, Sendable {
     }
 
     var firstPhotoUrl: URL? {
-        photoUrls.first.flatMap { URL(string: $0) }
+        photoUrls.lazy.compactMap { URL(string: $0) }.first
     }
 
     func photoURL(at index: Int) -> URL? {
