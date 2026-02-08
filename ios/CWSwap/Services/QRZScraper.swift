@@ -298,10 +298,17 @@ final class QRZScraper: Sendable {
             .flatMap { try? $0.attr("src") }
             .map { Self.resolveURL($0) }
 
-        // Photos: use direct image src URLs (not LbTrigger href which are attachment view pages)
-        var photoUrls: [String] = try firstMsg.select("img.bbCodeImage").compactMap { el in
+        // Photos: use direct image src from both lightbox attachments and BBCode images
+        let imgElements = try firstMsg.select("a.LbTrigger img, img.bbCodeImage")
+        var seenSrcs = Set<String>()
+        var photoUrls: [String] = []
+        for el in imgElements {
             let src = try el.attr("src")
-            return src.isEmpty ? nil : Self.resolveURL(src)
+            guard !src.isEmpty else { continue }
+            let resolved = Self.resolveURL(src)
+            if seenSrcs.insert(resolved).inserted {
+                photoUrls.append(resolved)
+            }
         }
 
         // Post date from first message
