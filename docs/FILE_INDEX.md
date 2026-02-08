@@ -22,7 +22,7 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 
 | File | Purpose |
 |------|---------|
-| `ios/project.yml` | XcodeGen spec: targets, deployment target, Swift version, build settings, SPM deps (SwiftSoup, KeychainAccess) |
+| `ios/project.yml` | XcodeGen spec: targets, deployment target, Swift version, build settings, SPM deps (SwiftSoup, KeychainAccess, FeedKit) |
 | `CWSwapApp.swift` | App entry point, scene setup, SwiftData modelContainer |
 
 ### Models
@@ -31,7 +31,10 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 |------|---------|
 | `Models/Listing.swift` | Main listing model (Codable, Sendable, Hashable) with direct URL construction |
 | `Models/Price.swift` | Price with amount, currency, includesShipping, obo |
-| `Models/ListingSource.swift` | Source enum (qrz, qth, hamestate) |
+| `Models/ListingSource.swift` | Source enum (qrz, qth, hamestate, ebay, craigslist) |
+| `Models/EbaySearchCategory.swift` | eBay category model (id, name, isEnabled) for user-managed category list |
+| `Models/CraigslistRegion.swift` | Craigslist region model (id, name, isEnabled) for per-region scraping |
+| `Models/CraigslistSearchTerm.swift` | Craigslist search term model (id, term, isEnabled) for configurable queries |
 | `Models/ListingStatus.swift` | Status enum (forSale, sold, canceled) |
 | `Models/ListingCategory.swift` | 14 equipment categories with SF Symbols and display names |
 | `Models/ListingsPage.swift` | Pagination wrapper (total, page, perPage, hasMore) |
@@ -51,7 +54,16 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `Services/QRZScraper.swift` | QRZ Forums scraper (Sendable): login, listing page, thread detail, conversations, SwiftSoup parsing |
 | `Services/QTHScraper.swift` | QTH.com scraper (Sendable): listing page, detail page, SwiftSoup parsing |
 | `Services/HamEstateScraper.swift` | HamEstate.com scraper (Sendable): WooCommerce product category + detail page parsing |
-| `Services/ScrapingService.swift` | Coordinates all three scrapers: fetch, filter, sort listings; static categories |
+| `Services/EbayConfig.swift` | eBay API constants, endpoints, default ham radio categories |
+| `Services/EbayAPIModels.swift` | eBay Browse API + Taxonomy API JSON response types (all Decodable, Sendable) |
+| `Services/EbayAuthManager.swift` | eBay OAuth client credentials actor: token caching, refresh |
+| `Services/EbayScraper.swift` | eBay Browse API client (Sendable): search by category IDs, map to Listing |
+| `Services/EbayCategoryStore.swift` | @MainActor @Observable category persistence in UserDefaults, taxonomy search |
+| `Services/CraigslistConfig.swift` | Craigslist RSS URL builder, default regions (30 US metros), default search terms |
+| `Services/CraigslistScraper.swift` | Craigslist scraper (Sendable): RSS feed + detail page scraping, FeedKit + SwiftSoup |
+| `Services/LocationManager.swift` | @MainActor @Observable CLLocationManager wrapper for single location fix |
+| `Services/CraigslistRegionStore.swift` | @MainActor @Observable region/term persistence in UserDefaults |
+| `Services/ScrapingService.swift` | Coordinates all scrapers (QRZ, QTH, HamEstate, eBay, Craigslist): fetch, filter, sort listings |
 | `Services/AuthenticationService.swift` | QRZ login/logout, Keychain credential storage, reauthentication |
 | `Services/ListingStore.swift` | SwiftData persistence: upsert, query, bookmark toggle |
 | `Services/NotificationService.swift` | Local notification authorization and delivery for listing alerts |
@@ -83,7 +95,9 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `Views/Messages/ConversationDetailView.swift` | Chat-style message thread with MessageBubbleView and reply bar |
 | `Views/Messages/NewConversationView.swift` | New conversation form sheet, pre-fillable for "Contact Seller" flow |
 | `Views/Saved/SavedView.swift` | Bookmarked listings from SwiftData with swipe-to-remove |
-| `Views/Settings/SettingsView.swift` | Settings form with QRZ account link, alerts link, and app info |
+| `Views/Settings/SettingsView.swift` | Settings form with QRZ account, eBay categories, Craigslist regions, alerts, and app info |
+| `Views/Settings/EbayCategoriesView.swift` | eBay category management: toggle, add/remove, taxonomy search |
+| `Views/Settings/CraigslistSettingsView.swift` | Craigslist region/search term management: toggle, add/remove regions and terms |
 | `Views/Settings/QRZLoginView.swift` | QRZ login form with Keychain-backed credential storage |
 | `Views/Settings/AlertsView.swift` | Alerts management: list, toggle, swipe-to-delete trigger alerts |
 | `Views/Settings/AlertFormView.swift` | Alert creation/edit form: name, keyword, category, source, price range |

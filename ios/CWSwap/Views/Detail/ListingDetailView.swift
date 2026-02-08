@@ -130,29 +130,40 @@ struct ListingDetailView: View {
 
                 Spacer()
 
-                // Contact seller button
-                Button {
-                    if authService.isLoggedIn {
-                        showingContactSheet = true
-                    } else {
-                        showingLoginAlert = true
+                if listing.source == .ebay {
+                    if let url = listing.sourceURL {
+                        Link(destination: url) {
+                            Label("View on eBay", systemImage: "safari")
+                                .font(.subheadline.weight(.medium))
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.blue)
                     }
-                } label: {
-                    Label("Contact Seller", systemImage: "message")
-                        .font(.subheadline.weight(.medium))
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.green)
-                .sheet(isPresented: $showingContactSheet) {
-                    NewConversationView(
-                        recipient: listing.callsign,
-                        title: "Re: \(listing.title)"
-                    )
-                }
-                .alert("Login Required", isPresented: $showingLoginAlert) {
-                    Button("OK") {}
-                } message: {
-                    Text("Log in to your QRZ account in Settings to contact sellers.")
+                } else {
+                    // Contact seller button
+                    Button {
+                        if authService.isLoggedIn {
+                            showingContactSheet = true
+                        } else {
+                            showingLoginAlert = true
+                        }
+                    } label: {
+                        Label("Contact Seller", systemImage: "message")
+                            .font(.subheadline.weight(.medium))
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.green)
+                    .sheet(isPresented: $showingContactSheet) {
+                        NewConversationView(
+                            recipient: listing.callsign,
+                            title: "Re: \(listing.title)"
+                        )
+                    }
+                    .alert("Login Required", isPresented: $showingLoginAlert) {
+                        Button("OK") {}
+                    } message: {
+                        Text("Log in to your QRZ account in Settings to contact sellers.")
+                    }
                 }
             }
         }
@@ -230,12 +241,16 @@ struct ListingDetailView: View {
                 }
             }
 
-            LabeledContent("Replies") {
-                Text("\(listing.replies)")
+            if listing.replies > 0 {
+                LabeledContent("Replies") {
+                    Text("\(listing.replies)")
+                }
             }
 
-            LabeledContent("Views") {
-                Text("\(listing.views)")
+            if listing.views > 0 {
+                LabeledContent("Views") {
+                    Text("\(listing.views)")
+                }
             }
 
             if let url = listing.sourceURL {

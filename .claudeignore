@@ -1,0 +1,19 @@
+# Build artifacts
+DerivedData/
+build/
+backend/target/
+
+# Xcode user data
+*.xcuserstate
+xcuserdata/
+
+# Reference HTML samples
+qrz_sources/
+
+# Binary files
+*.png
+*.jpg
+*.ico
+
+# macOS
+.DS_Store

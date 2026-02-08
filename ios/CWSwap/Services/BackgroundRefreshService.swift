@@ -15,8 +15,9 @@ struct BackgroundRefreshService: Sendable {
         ) { task in
             guard let refreshTask = task as? BGAppRefreshTask else { return }
             // Handler runs on main queue (.main above), so MainActor is safe
+            nonisolated(unsafe) let task = refreshTask
             MainActor.assumeIsolated {
-                handleRefresh(refreshTask)
+                handleRefresh(task)
             }
         }
     }

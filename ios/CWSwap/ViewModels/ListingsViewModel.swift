@@ -7,6 +7,8 @@ import SwiftData
 class ListingsViewModel {
     private let scrapingService = ScrapingService()
     private var listingStore: ListingStore?
+    var ebayCategoryStore = EbayCategoryStore()
+    var craigslistRegionStore = CraigslistRegionStore()
 
     /// Maximum listings held in memory. Oldest evicted when exceeded.
     private static let maxInMemoryListings = 500
@@ -20,6 +22,7 @@ class ListingsViewModel {
     var syncProgress: Double = 0
     var syncStatus: String = ""
     var isSyncing = false
+    var sourceErrors: [String] = []
 
     // Filters
     var selectedSource: ListingSource?
@@ -31,6 +34,8 @@ class ListingsViewModel {
     var hideSold = true
 
     private var currentPage = 1
+    /// Incremented on each loadListings call; stale loads check this to bail out.
+    private var loadGeneration = 0
     // All scraped listings before filtering (for merge tracking)
     private var allScrapedListings: [String: Listing] = [:]
     /// Insertion order for eviction (oldest first)
@@ -64,17 +69,24 @@ class ListingsViewModel {
     }
 
     func loadListings() async {
-        guard !isLoading else { return }
+        loadGeneration &+= 1
+        let generation = loadGeneration
+
+        // Reload store state from UserDefaults in case Settings changed it
+        craigslistRegionStore.reloadFromDefaults()
+        ebayCategoryStore.reloadFromDefaults()
+
         isLoading = true
         isSyncing = true
         syncProgress = 0
         syncStatus = "Loading cached data..."
         error = nil
+        sourceErrors = []
         currentPage = 1
         allScrapedListings.removeAll()
         insertionOrder.removeAll()
 
-        // Show cached data immediately
+        // Show cached data immediately (or clear if no cache)
         if let store = listingStore {
             do {
                 let cached = try store.fetchCachedListings(
@@ -86,30 +98,35 @@ class ListingsViewModel {
                     hideSold: hideSold,
                     sort: sortOption.rawValue
                 )
-                if !cached.isEmpty {
-                    listings = cached
-                    // Populate merge tracker from cache
-                    for listing in cached {
-                        allScrapedListings[listing.id] = listing
-                    }
+                listings = cached
+                for listing in cached {
+                    allScrapedListings[listing.id] = listing
                 }
             } catch {
-                // Cache miss is fine, will scrape
+                listings = []
             }
+        } else {
+            listings = []
         }
 
         // Progressive scrape
         let (listingStream, progressStream) = scrapingService.scrapeProgressively(
             page: 1,
-            source: selectedSource
+            source: selectedSource,
+            ebayCategoryIds: ebayCategoryStore.enabledCategoryIds,
+            craigslistRegions: craigslistRegionStore.enabledRegions,
+            craigslistSearchTerms: craigslistRegionStore.enabledSearchTerms
         )
 
         // Consume progress updates in a separate task
         let progressTask = Task {
             for await progress in progressStream {
+                guard generation == self.loadGeneration else { break }
                 self.syncProgress = progress.fraction
                 let sourceName = progress.source.displayName
-                if progress.completedSteps < progress.totalSteps {
+                if let errorMsg = progress.errorMessage {
+                    self.sourceErrors.append("\(sourceName): \(errorMsg)")
+                } else if progress.completedSteps < progress.totalSteps {
                     self.syncStatus = "Syncing \(sourceName)... \(progress.completedSteps)/\(progress.totalSteps)"
                 } else {
                     self.syncStatus = "\(sourceName) complete"
@@ -123,6 +140,7 @@ class ListingsViewModel {
         var pendingPersist: [Listing] = []
         let batchSize = 20
         for await listing in listingStream {
+            guard generation == loadGeneration else { break }
             let merged = mergeListing(listing)
             if merged == .inserted { newCount += 1 }
             if merged == .updated { updatedCount += 1 }
@@ -138,13 +156,20 @@ class ListingsViewModel {
                 reapplyFilters()
             }
         }
+
+        // Bail out if superseded by a newer load
+        guard generation == loadGeneration else {
+            progressTask.cancel()
+            return
+        }
+
         // Flush remaining
         if !pendingPersist.isEmpty {
             if let store = listingStore {
                 _ = try? store.upsertListings(pendingPersist)
             }
-            reapplyFilters()
         }
+        reapplyFilters()
 
         await progressTask.value
         hasMore = newCount > 0 || updatedCount > 0
@@ -169,7 +194,10 @@ class ListingsViewModel {
 
         let (listingStream, progressStream) = scrapingService.scrapeProgressively(
             page: nextPage,
-            source: selectedSource
+            source: selectedSource,
+            ebayCategoryIds: ebayCategoryStore.enabledCategoryIds,
+            craigslistRegions: craigslistRegionStore.enabledRegions,
+            craigslistSearchTerms: craigslistRegionStore.enabledSearchTerms
         )
 
         let progressTask = Task {

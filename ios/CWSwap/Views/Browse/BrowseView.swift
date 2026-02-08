@@ -61,6 +61,13 @@ struct BrowseView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)
         }
+
+        ForEach(viewModel.sourceErrors, id: \.self) { errorMsg in
+            Text(errorMsg)
+                .font(.caption)
+                .foregroundStyle(.red)
+                .padding(.horizontal)
+        }
     }
 
     @ViewBuilder
@@ -79,6 +86,22 @@ struct BrowseView: View {
                     systemImage: "exclamationmark.triangle",
                     description: Text(error.localizedDescription)
                 )
+            } else if viewModel.selectedSource == .craigslist
+                && viewModel.craigslistRegionStore.enabledRegions.isEmpty
+                && !viewModel.isLoading
+            {
+                ContentUnavailableView {
+                    Label("No Regions Selected", systemImage: "map")
+                } description: {
+                    Text("Enable at least one Craigslist region to see listings.")
+                } actions: {
+                    NavigationLink {
+                        CraigslistSettingsView(store: viewModel.craigslistRegionStore)
+                    } label: {
+                        Text("Select Regions")
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
             } else if viewModel.listings.isEmpty && !viewModel.isLoading && !authService.isLoggedIn {
                 ContentUnavailableView {
                     Label("Log In to Browse", systemImage: "person.crop.circle.badge.questionmark")

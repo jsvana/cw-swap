@@ -56,7 +56,7 @@ struct AlertFormView: View {
                 }
             }
 
-            Section("Price Range") {
+            Section {
                 HStack {
                     TextField("Min", text: $priceMinText)
                         .keyboardType(.numberPad)
@@ -65,6 +65,8 @@ struct AlertFormView: View {
                     TextField("Max", text: $priceMaxText)
                         .keyboardType(.numberPad)
                 }
+            } header: {
+                Text("Price Range")
             } footer: {
                 Text("Leave blank for no price filter.")
             }

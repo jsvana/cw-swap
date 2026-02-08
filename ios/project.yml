@@ -28,10 +28,17 @@ targets:
     dependencies:
       - package: SwiftSoup
       - package: KeychainAccess
+    configFiles:
+      Debug: Secrets.xcconfig
+      Release: Secrets.xcconfig
     info:
+      path: CWSwap/Info.plist
       properties:
         BGTaskSchedulerPermittedIdentifiers:
           - com.jsvana.cwswap.refresh
+        EbayClientId: $(EBAY_CLIENT_ID)
+        EbayClientSecret: $(EBAY_CLIENT_SECRET)
+        NSLocationWhenInUseUsageDescription: "CW Swap uses your location to find nearby Craigslist regions for ham radio listings."
     settings:
       base:
         INFOPLIST_GENERATION_MODE: GeneratedFile

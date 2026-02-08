@@ -12,3 +12,8 @@ DerivedData/
 
 # Environment
 .env
+ios/Secrets.xcconfig
+
+# Claude Code (user-local)
+CLAUDE.local.md
+.claude/settings.local.json
