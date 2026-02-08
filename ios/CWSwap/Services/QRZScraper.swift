@@ -130,7 +130,7 @@ final class QRZScraper: Sendable {
         return listings
     }
 
-    /// Returns total thread count for progress tracking.
+    /// Scrapes thread details concurrently (up to 5 at a time) for progress tracking.
     func scrapeFullPage(
         page: Int,
         onListing: (Listing) -> Void,
@@ -140,43 +140,65 @@ final class QRZScraper: Sendable {
         let nonSticky = entries.filter { !$0.isSticky }
         let total = nonSticky.count
         var completed = 0
+        let maxConcurrency = 5
 
         onProgress(0, total)
 
-        for entry in nonSticky {
-            let slug = Self.slugFromURL(entry.url)
-            do {
-                var listing = try await scrapeThread(threadId: entry.threadId, slug: slug)
-                listing = Listing(
-                    id: listing.id,
-                    source: listing.source,
-                    sourceUrl: listing.sourceUrl,
-                    title: listing.title,
-                    description: listing.description,
-                    descriptionHtml: listing.descriptionHtml,
-                    status: listing.status,
-                    callsign: listing.callsign,
-                    memberId: listing.memberId,
-                    avatarUrl: listing.avatarUrl,
-                    price: listing.price,
-                    photoUrls: listing.photoUrls,
-                    category: listing.category,
-                    datePosted: listing.datePosted,
-                    dateModified: listing.dateModified,
-                    replies: entry.replies,
-                    views: entry.views,
-                    contactEmail: listing.contactEmail,
-                    contactPhone: listing.contactPhone,
-                    contactMethods: listing.contactMethods
-                )
-                onListing(listing)
-            } catch {
-                // Skip failed threads, continue with others
+        await withTaskGroup(of: Listing?.self) { group in
+            var nextIndex = 0
+
+            // Seed initial batch
+            while nextIndex < min(maxConcurrency, nonSticky.count) {
+                let entry = nonSticky[nextIndex]
+                nextIndex += 1
+                group.addTask { await self.scrapeEntry(entry) }
             }
-            completed += 1
-            onProgress(completed, total)
-            // Rate limit: 1 request per second
-            try await Task.sleep(for: .seconds(1))
+
+            // Process results as they arrive, enqueue more work
+            for await listing in group {
+                completed += 1
+                onProgress(completed, total)
+                if let listing {
+                    onListing(listing)
+                }
+
+                if nextIndex < nonSticky.count {
+                    let entry = nonSticky[nextIndex]
+                    nextIndex += 1
+                    group.addTask { await self.scrapeEntry(entry) }
+                }
+            }
+        }
+    }
+
+    private func scrapeEntry(_ entry: ThreadEntry) async -> Listing? {
+        let slug = Self.slugFromURL(entry.url)
+        do {
+            let listing = try await scrapeThread(threadId: entry.threadId, slug: slug)
+            return Listing(
+                id: listing.id,
+                source: listing.source,
+                sourceUrl: listing.sourceUrl,
+                title: listing.title,
+                description: listing.description,
+                descriptionHtml: listing.descriptionHtml,
+                status: listing.status,
+                callsign: listing.callsign,
+                memberId: listing.memberId,
+                avatarUrl: listing.avatarUrl,
+                price: listing.price,
+                photoUrls: listing.photoUrls,
+                category: listing.category,
+                datePosted: listing.datePosted,
+                dateModified: listing.dateModified,
+                replies: entry.replies,
+                views: entry.views,
+                contactEmail: listing.contactEmail,
+                contactPhone: listing.contactPhone,
+                contactMethods: listing.contactMethods
+            )
+        } catch {
+            return nil
         }
     }
 
