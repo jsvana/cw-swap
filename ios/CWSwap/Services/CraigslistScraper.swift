@@ -231,7 +231,7 @@ final class CraigslistScraper: Sendable {
     private func parseJsonLd(_ doc: Document, region: CraigslistRegion) throws -> [Listing] {
         let scripts = try doc.select("script[type=application/ld+json]")
         for script in scripts {
-            let jsonText = try script.data()
+            let jsonText = script.data()
             guard let jsonData = jsonText.data(using: .utf8) else { continue }
 
             // Try to decode as ItemList
