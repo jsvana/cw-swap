@@ -26,6 +26,8 @@
 	<string>$(EBAY_CLIENT_ID)</string>
 	<key>EbayClientSecret</key>
 	<string>$(EBAY_CLIENT_SECRET)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>CW Swap uses your location to find nearby Craigslist regions for ham radio listings.</string>
 </dict>

@@ -14,6 +14,9 @@ DerivedData/
 .env
 ios/Secrets.xcconfig
 
+# Build artifacts
+build/
+
 # Claude Code (user-local)
 CLAUDE.local.md
 .claude/settings.local.json
