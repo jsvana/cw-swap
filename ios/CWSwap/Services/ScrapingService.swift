@@ -3,6 +3,7 @@ import Foundation
 struct ScrapingService: Sendable {
     private let qrzScraper = QRZScraper()
     private let qthScraper = QTHScraper()
+    private let hamEstateScraper = HamEstateScraper()
 
     struct SyncProgress: Sendable {
         let completedSteps: Int
@@ -43,6 +44,15 @@ struct ScrapingService: Sendable {
             } catch {
                 // QRZ failure is non-fatal if we have QTH results
                 if allListings.isEmpty { throw error }
+            }
+        }
+
+        if source == nil || source == .hamestate {
+            do {
+                let hamEstateListings = try await hamEstateScraper.scrapeFullPage(page: page)
+                allListings.append(contentsOf: hamEstateListings)
+            } catch {
+                // HamEstate failure is non-fatal
             }
         }
 
@@ -98,6 +108,23 @@ struct ScrapingService: Sendable {
                     )
                 } catch {
                     // QRZ failure is non-fatal
+                }
+            }
+
+            // HamEstate: one product at a time with progress
+            if source == nil || source == .hamestate {
+                do {
+                    try await hamEstateScraper.scrapeFullPage(
+                        page: page,
+                        onListing: { listing in
+                            listingCont.yield(listing)
+                        },
+                        onProgress: { completed, total in
+                            progressCont.yield(SyncProgress(completedSteps: completed, totalSteps: total, source: .hamestate))
+                        }
+                    )
+                } catch {
+                    // HamEstate failure is non-fatal
                 }
             }
         }

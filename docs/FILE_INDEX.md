@@ -31,7 +31,7 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 |------|---------|
 | `Models/Listing.swift` | Main listing model (Codable, Sendable, Hashable) with direct URL construction |
 | `Models/Price.swift` | Price with amount, currency, includesShipping, obo |
-| `Models/ListingSource.swift` | Source enum (qrz, qth) |
+| `Models/ListingSource.swift` | Source enum (qrz, qth, hamestate) |
 | `Models/ListingStatus.swift` | Status enum (forSale, sold, canceled) |
 | `Models/ListingCategory.swift` | 14 equipment categories with SF Symbols and display names |
 | `Models/ListingsPage.swift` | Pagination wrapper (total, page, perPage, hasMore) |
@@ -50,7 +50,8 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `Services/KeychainManager.swift` | Wraps KeychainAccess for QRZ username/password storage |
 | `Services/QRZScraper.swift` | QRZ Forums scraper (Sendable): login, listing page, thread detail, conversations, SwiftSoup parsing |
 | `Services/QTHScraper.swift` | QTH.com scraper (Sendable): listing page, detail page, SwiftSoup parsing |
-| `Services/ScrapingService.swift` | Coordinates both scrapers: fetch, filter, sort listings; static categories |
+| `Services/HamEstateScraper.swift` | HamEstate.com scraper (Sendable): WooCommerce product category + detail page parsing |
+| `Services/ScrapingService.swift` | Coordinates all three scrapers: fetch, filter, sort listings; static categories |
 | `Services/AuthenticationService.swift` | QRZ login/logout, Keychain credential storage, reauthentication |
 | `Services/ListingStore.swift` | SwiftData persistence: upsert, query, bookmark toggle |
 | `Services/NotificationService.swift` | Local notification authorization and delivery for listing alerts |
