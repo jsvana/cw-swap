@@ -7,10 +7,13 @@ struct BrowseView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                sourceFilterSection
-                syncProgressSection
-                recentListingsSection
+            LazyVStack(alignment: .leading, spacing: 16, pinnedViews: [.sectionHeaders]) {
+                Section {
+                    syncProgressSection
+                    recentListingsSection
+                } header: {
+                    sourceFilterSection
+                }
             }
             .padding(.vertical)
         }
@@ -29,19 +32,38 @@ struct BrowseView: View {
         }
     }
 
-    @ViewBuilder
     private var sourceFilterSection: some View {
-        Picker("Source", selection: $viewModel.selectedSource) {
-            Text("All").tag(nil as ListingSource?)
-            ForEach(ListingSource.allCases, id: \.self) { source in
-                Text(source.displayName).tag(source as ListingSource?)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                sourceChip(label: "All", source: nil)
+                ForEach(ListingSource.allCases, id: \.self) { source in
+                    sourceChip(label: source.displayName, source: source)
+                }
             }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
         }
-        .pickerStyle(.segmented)
-        .padding(.horizontal)
+        .background(.bar)
         .onChange(of: viewModel.selectedSource) {
             Task { await viewModel.loadListings() }
         }
+    }
+
+    private func sourceChip(label: String, source: ListingSource?) -> some View {
+        let isSelected = viewModel.selectedSource == source
+        return Button {
+            viewModel.selectedSource = source
+        } label: {
+            Text(label)
+                .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .frame(minHeight: 36)
+                .foregroundStyle(isSelected ? .white : .primary)
+                .background(isSelected ? Color.accentColor : Color(.secondarySystemFill), in: .capsule)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     @ViewBuilder
@@ -102,7 +124,9 @@ struct BrowseView: View {
                     }
                     .buttonStyle(.borderedProminent)
                 }
-            } else if viewModel.listings.isEmpty && !viewModel.isLoading && !authService.isLoggedIn {
+            } else if viewModel.listings.isEmpty && !viewModel.isLoading && !authService.isLoggedIn
+                && (viewModel.selectedSource == nil || viewModel.selectedSource == .qrz)
+            {
                 ContentUnavailableView {
                     Label("Log In to Browse", systemImage: "person.crop.circle.badge.questionmark")
                 } description: {
