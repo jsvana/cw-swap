@@ -18,6 +18,7 @@
 		10954FB5B07016BBB94E436A /* ConversationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A60E2659CC9D5071EC310796 /* ConversationsView.swift */; };
 		11566F85377E147739FD30F0 /* CraigslistSearchTerm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 420ED69047156CDC7BF36E91 /* CraigslistSearchTerm.swift */; };
 		115ACAA94E6017CAB1A45328 /* CraigslistSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 086A77B88F50AC6C62908CF5 /* CraigslistSettingsView.swift */; };
+		1746DBA483E36DFCA0C6B2A8 /* HamEstateScraper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35774BFFDCBD7A95DFF5E755 /* HamEstateScraper.swift */; };
 		1A687B9C7ACB8007BCB13D51 /* EbayCategoriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C49FB6B2FAD2E8769DABE3F4 /* EbayCategoriesView.swift */; };
 		293F6EAB1641C81771D0C02E /* EbaySearchCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = B08A6079CAE11D224F438C1A /* EbaySearchCategory.swift */; };
 		3C52ECAC119DD531F5FA1BBC /* AlertsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69AE55A90F268867EF0477A3 /* AlertsView.swift */; };
@@ -81,6 +82,7 @@
 		25EDD7B2D38399CB8C913A8C /* ListingSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingSource.swift; sourceTree = "<group>"; };
 		261210032570520E933B51B3 /* ListingStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingStatus.swift; sourceTree = "<group>"; };
 		2E694C7C9D46B62283A3748D /* ScrapingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrapingService.swift; sourceTree = "<group>"; };
+		35774BFFDCBD7A95DFF5E755 /* HamEstateScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HamEstateScraper.swift; sourceTree = "<group>"; };
 		36017C64D2266B187F6E69FA /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		369EFC2D9BFD353D3B0B93BE /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		399752F9A844279C18C943E1 /* CraigslistRegionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CraigslistRegionStore.swift; sourceTree = "<group>"; };
@@ -252,6 +254,7 @@
 				045FCB64FEC551DE24C0F0E0 /* EbayCategoryStore.swift */,
 				EEAC9C275FA34C4E3C857C5C /* EbayConfig.swift */,
 				5B50946C1036823A2C283EA9 /* EbayScraper.swift */,
+				35774BFFDCBD7A95DFF5E755 /* HamEstateScraper.swift */,
 				660B23C49BB2011C6D3B0077 /* KeychainManager.swift */,
 				05F0915EDCABA747CF38229D /* ListingStore.swift */,
 				B383D86BF13F60E4FE321943 /* LocationManager.swift */,
@@ -430,6 +433,7 @@
 				91782B7EFEA328F68A505912 /* EbayScraper.swift in Sources */,
 				293F6EAB1641C81771D0C02E /* EbaySearchCategory.swift in Sources */,
 				403BF044B932601036DBF927 /* FilterSheetView.swift in Sources */,
+				1746DBA483E36DFCA0C6B2A8 /* HamEstateScraper.swift in Sources */,
 				68643884AFE4B6C88CE239A5 /* KeychainManager.swift in Sources */,
 				576DABFBBA35A0E46D381BE9 /* Listing.swift in Sources */,
 				F27D1F44D39E2BB044703F9B /* ListingCardView.swift in Sources */,
