@@ -30,6 +30,7 @@ final class PersistedListing {
     var dateScraped: Date = Date()
     var isBookmarked: Bool = false
     var auctionMetaData: Data?
+    var seenAt: Date?
 
     init() {}
 

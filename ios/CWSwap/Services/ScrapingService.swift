@@ -260,12 +260,16 @@ struct ScrapingService: Sendable {
         priceMax: Double? = nil,
         hasPhoto: Bool? = nil,
         hideSold: Bool = true,
+        seenIds: Set<String>? = nil,
         sort: String? = nil
     ) -> [Listing] {
         var filtered = listings
 
         if let source {
             filtered = filtered.filter { $0.source == source }
+        }
+        if let seenIds {
+            filtered = filtered.filter { !seenIds.contains($0.id) }
         }
         if hideSold {
             filtered = filtered.filter { $0.status != .sold }

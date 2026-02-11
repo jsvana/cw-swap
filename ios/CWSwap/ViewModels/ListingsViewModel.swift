@@ -32,8 +32,10 @@ class ListingsViewModel {
     var priceMax: Double?
     var hasPhotoOnly = false
     var hideSold = true
+    var hideSeen = true
 
     private var currentPage = 1
+    private var seenIdsSnapshot: Set<String> = []
     /// Incremented on each loadListings call; stale loads check this to bail out.
     private var loadGeneration = 0
     // All scraped listings before filtering (for merge tracking)
@@ -63,7 +65,7 @@ class ListingsViewModel {
 
     var hasActiveFilters: Bool {
         selectedSource != nil || !searchQuery.isEmpty
-            || priceMin != nil || priceMax != nil || hasPhotoOnly || !hideSold
+            || priceMin != nil || priceMax != nil || hasPhotoOnly || !hideSold || !hideSeen
     }
 
     func setModelContext(_ context: ModelContext) {
@@ -88,6 +90,13 @@ class ListingsViewModel {
         allScrapedListings.removeAll()
         insertionOrder.removeAll()
 
+        // Snapshot seen IDs once per load so items don't vanish mid-scroll
+        if hideSeen, let store = listingStore {
+            seenIdsSnapshot = store.seenListingIds()
+        } else {
+            seenIdsSnapshot = []
+        }
+
         // Show cached data immediately (or clear if no cache)
         if let store = listingStore {
             do {
@@ -98,6 +107,7 @@ class ListingsViewModel {
                     priceMax: priceMax,
                     hasPhoto: hasPhotoOnly ? true : nil,
                     hideSold: hideSold,
+                    hideSeen: hideSeen,
                     sort: sortOption.rawValue
                 )
                 listings = cached
@@ -236,6 +246,7 @@ class ListingsViewModel {
         priceMax = nil
         hasPhotoOnly = false
         hideSold = true
+        hideSeen = true
     }
 
     // MARK: - Merge
@@ -276,8 +287,16 @@ class ListingsViewModel {
             priceMax: priceMax,
             hasPhoto: hasPhotoOnly ? true : nil,
             hideSold: hideSold,
+            seenIds: hideSeen ? seenIdsSnapshot : nil,
             sort: sortOption.rawValue
         )
+    }
+
+    func markAsSeen(_ listingId: String) {
+        // Add to in-memory snapshot (won't re-filter, so current list stays stable)
+        seenIdsSnapshot.insert(listingId)
+        // Persist to SwiftData
+        try? listingStore?.markAsSeen(listingIds: [listingId])
     }
 
 }

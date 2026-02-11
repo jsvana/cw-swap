@@ -39,6 +39,11 @@ struct BrowseView: View {
                 ForEach(ListingSource.allCases, id: \.self) { source in
                     sourceChip(label: source.displayName, source: source)
                 }
+
+                Divider()
+                    .frame(height: 20)
+
+                newChip
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
@@ -47,6 +52,25 @@ struct BrowseView: View {
         .onChange(of: viewModel.selectedSource) {
             Task { await viewModel.loadListings() }
         }
+        .onChange(of: viewModel.hideSeen) {
+            Task { await viewModel.loadListings() }
+        }
+    }
+
+    private var newChip: some View {
+        Button {
+            viewModel.hideSeen.toggle()
+        } label: {
+            Label("New", systemImage: viewModel.hideSeen ? "eye.slash.fill" : "eye.slash")
+                .font(.subheadline.weight(viewModel.hideSeen ? .semibold : .regular))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .frame(minHeight: 36)
+                .foregroundStyle(viewModel.hideSeen ? .white : .primary)
+                .background(viewModel.hideSeen ? Color.accentColor : Color(.secondarySystemFill), in: .capsule)
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(viewModel.hideSeen ? .isSelected : [])
     }
 
     private func sourceChip(label: String, source: ListingSource?) -> some View {
@@ -156,6 +180,9 @@ struct BrowseView: View {
                             if listing.id == viewModel.listings.last?.id {
                                 Task { await viewModel.loadMore() }
                             }
+                        }
+                        .onDisappear {
+                            viewModel.markAsSeen(listing.id)
                         }
                     }
 

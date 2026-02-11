@@ -50,6 +50,8 @@ struct ListingDetailView: View {
         }
         .task {
             viewModel.setModelContext(modelContext)
+            let store = ListingStore(modelContext: modelContext)
+            try? store.markAsSeen(listingIds: [listing.id])
         }
     }
 

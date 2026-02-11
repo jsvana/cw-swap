@@ -67,6 +67,7 @@ class ListingStore {
         priceMax: Double? = nil,
         hasPhoto: Bool? = nil,
         hideSold: Bool = true,
+        hideSeen: Bool = false,
         sort: String? = nil
     ) throws -> [Listing] {
         var descriptor = FetchDescriptor<PersistedListing>(
@@ -77,7 +78,13 @@ class ListingStore {
         let results = try modelContext.fetch(descriptor)
 
         // Apply filters in-memory (SwiftData predicates have limited expressiveness)
-        var filtered = results.map { $0.toListing() }
+        var filtered: [Listing]
+        if hideSeen {
+            let seenIds = seenListingIds()
+            filtered = results.filter { seenIds.contains($0.id) == false }.map { $0.toListing() }
+        } else {
+            filtered = results.map { $0.toListing() }
+        }
 
         if hideSold {
             filtered = filtered.filter { $0.status != .sold }
@@ -152,6 +159,26 @@ class ListingStore {
             try modelContext.save()
         }
         return count
+    }
+
+    func markAsSeen(listingIds: Set<String>) throws {
+        for id in listingIds {
+            let descriptor = FetchDescriptor<PersistedListing>(
+                predicate: #Predicate { $0.id == id }
+            )
+            if let listing = try modelContext.fetch(descriptor).first, listing.seenAt == nil {
+                listing.seenAt = Date()
+            }
+        }
+        try modelContext.save()
+    }
+
+    func seenListingIds() -> Set<String> {
+        let descriptor = FetchDescriptor<PersistedListing>(
+            predicate: #Predicate { $0.seenAt != nil }
+        )
+        let results = (try? modelContext.fetch(descriptor)) ?? []
+        return Set(results.map(\.id))
     }
 
     func bookmarkedListings() throws -> [Listing] {
