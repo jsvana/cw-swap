@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -73,7 +73,7 @@
 		045FCB64FEC551DE24C0F0E0 /* EbayCategoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EbayCategoryStore.swift; sourceTree = "<group>"; };
 		05F0915EDCABA747CF38229D /* ListingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingStore.swift; sourceTree = "<group>"; };
 		086A77B88F50AC6C62908CF5 /* CraigslistSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CraigslistSettingsView.swift; sourceTree = "<group>"; };
-		0D1C7B231272763FB740E0D0 /* CWSwap.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CWSwap.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0D1C7B231272763FB740E0D0 /* CWSwap.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CWSwap.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1341E48777405EDB736A28FB /* BrowseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseView.swift; sourceTree = "<group>"; };
 		1D23E93AA0EF6AB89F541CA1 /* AuthenticationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationService.swift; sourceTree = "<group>"; };
 		1E590389B08F021B527A186C /* AlertsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlertsViewModel.swift; sourceTree = "<group>"; };
@@ -84,7 +84,6 @@
 		2E694C7C9D46B62283A3748D /* ScrapingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrapingService.swift; sourceTree = "<group>"; };
 		35774BFFDCBD7A95DFF5E755 /* HamEstateScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HamEstateScraper.swift; sourceTree = "<group>"; };
 		36017C64D2266B187F6E69FA /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
-		369EFC2D9BFD353D3B0B93BE /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		399752F9A844279C18C943E1 /* CraigslistRegionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CraigslistRegionStore.swift; sourceTree = "<group>"; };
 		3ABDED1384F82D97F1E7565B /* ListingCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingCardView.swift; sourceTree = "<group>"; };
 		3CFC9B9E5F1A27F600D22AF4 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
@@ -95,6 +94,7 @@
 		58BA94034A304A172243DEF1 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		5985C1353869F9D412F3D321 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5B50946C1036823A2C283EA9 /* EbayScraper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EbayScraper.swift; sourceTree = "<group>"; };
+		5BC52E435006F2F612038CE3 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 		660B23C49BB2011C6D3B0077 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		67161DA31B5FEE669EE16353 /* ListingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingDetailView.swift; sourceTree = "<group>"; };
 		671B68538373EF5E8A68F814 /* ListingCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListingCategory.swift; sourceTree = "<group>"; };
@@ -119,6 +119,9 @@
 		C49FB6B2FAD2E8769DABE3F4 /* EbayCategoriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EbayCategoriesView.swift; sourceTree = "<group>"; };
 		C4DC632D67B7A88CB6ADA49F /* ConversationDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationDetailView.swift; sourceTree = "<group>"; };
 		CEDBD46E560D661AC7530A2B /* NewConversationViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewConversationViewModel.swift; sourceTree = "<group>"; };
+		CFB18CC12F3D316800F0F89F /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
+		CFB18CC22F3D316800F0F89F /* .gitkeep */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitkeep; sourceTree = "<group>"; };
+		CFB18CC42F3D316800F0F89F /* FILE_INDEX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = FILE_INDEX.md; sourceTree = "<group>"; };
 		D07A03DA474447AEE345F101 /* Conversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Conversation.swift; sourceTree = "<group>"; };
 		D915E611DF2E7A6EB9EB965B /* NewConversationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewConversationView.swift; sourceTree = "<group>"; };
 		DBB73F9BA4647DAB16AD6C8C /* CWSwapApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CWSwapApp.swift; sourceTree = "<group>"; };
@@ -286,6 +289,15 @@
 			path = Messages;
 			sourceTree = "<group>";
 		};
+		B9C3B5C84D55541B8A67F9AA /* cw_swap */ = {
+			isa = PBXGroup;
+			children = (
+				5BC52E435006F2F612038CE3 /* Secrets.xcconfig */,
+			);
+			name = cw_swap;
+			path = .;
+			sourceTree = "<group>";
+		};
 		BAAF61DA85EEA01AA9222BF7 /* Search */ = {
 			isa = PBXGroup;
 			children = (
@@ -295,20 +307,30 @@
 			path = Search;
 			sourceTree = "<group>";
 		};
-		CF675FEDC020CECC1EDA58AF /* ios */ = {
+		CFB18CC32F3D316800F0F89F /* investigations */ = {
 			isa = PBXGroup;
 			children = (
-				369EFC2D9BFD353D3B0B93BE /* Secrets.xcconfig */,
+				CFB18CC22F3D316800F0F89F /* .gitkeep */,
 			);
-			name = ios;
-			path = .;
+			path = investigations;
+			sourceTree = "<group>";
+		};
+		CFB18CC52F3D316800F0F89F /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				CFB18CC32F3D316800F0F89F /* investigations */,
+				CFB18CC42F3D316800F0F89F /* FILE_INDEX.md */,
+			);
+			path = docs;
 			sourceTree = "<group>";
 		};
 		DA1A523C142B6DAF9004CE23 = {
 			isa = PBXGroup;
 			children = (
+				CFB18CC12F3D316800F0F89F /* CLAUDE.md */,
+				CFB18CC52F3D316800F0F89F /* docs */,
+				B9C3B5C84D55541B8A67F9AA /* cw_swap */,
 				3B22746F0250156F3A33F3AD /* CWSwap */,
-				CF675FEDC020CECC1EDA58AF /* ios */,
 				5F6624FE022F8CBE4157287E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -379,7 +401,6 @@
 				77E7C5C9EE932A1506B8ED51 /* XCRemoteSwiftPackageReference "KeychainAccess" */,
 				707EE913B1F2D34C9DDF63E7 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -469,7 +490,7 @@
 /* Begin XCBuildConfiguration section */
 		9987ED3C087368733BF038F2 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 369EFC2D9BFD353D3B0B93BE /* Secrets.xcconfig */;
+			baseConfigurationReference = 5BC52E435006F2F612038CE3 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -556,7 +577,7 @@
 		};
 		D09868CDFBEF7E87F792E73B /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 369EFC2D9BFD353D3B0B93BE /* Secrets.xcconfig */;
+			baseConfigurationReference = 5BC52E435006F2F612038CE3 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

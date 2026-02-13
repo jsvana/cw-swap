@@ -42,12 +42,12 @@ When spawning subagents via the Task tool, select models based on task complexit
 
 ### iOS (SwiftUI)
 ```bash
-cd ios && xcodegen generate      # Regenerate Xcode project from project.yml
-xcodebuild -project ios/CWSwap.xcodeproj -scheme CWSwap \
+xcodegen generate      # Regenerate Xcode project from project.yml
+xcodebuild -project CWSwap.xcodeproj -scheme CWSwap \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
 ```
 
-Always run `xcodegen generate` after modifying `ios/project.yml`.
+Always run `xcodegen generate` after modifying `project.yml`.
 
 ### Backend (Rust — reference only)
 ```bash
@@ -57,8 +57,8 @@ cd backend && cargo test         # Run tests
 
 ## Architecture
 
-### iOS App (`ios/`)
-- **XcodeGen** project generated from `ios/project.yml` — iOS 18+ deployment target, Swift 6, strict concurrency
+### iOS App
+- **XcodeGen** project generated from `project.yml` — iOS 18+ deployment target, Swift 6, strict concurrency
 - **SPM deps**: SwiftSoup (HTML parsing), KeychainAccess (credential storage)
 - **Models**: All conform to `Codable`, `Sendable`, `Hashable`. `PersistedListing` is SwiftData `@Model` for offline cache + bookmarks
 - **Scrapers**: `QRZScraper` and `QTHScraper` are `final class: Sendable` using URLSession + SwiftSoup. `ScrapingService` coordinates both
@@ -130,6 +130,10 @@ Images are loaded directly from source URLs (QRZ, QTH) — no proxying needed si
 - Update incrementally as you discover new information
 - Document dead ends too — they prevent re-investigating the same paths
 - Mark the status as **Resolved** and add **Outcome** when done
+
+## Issue Tracking
+
+Use **Linear** (via the `linear-cli` skill) for issue tracking. Do NOT use beads.
 
 ## Git Workflow
 

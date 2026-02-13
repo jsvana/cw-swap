@@ -2,8 +2,8 @@
 backend/target/
 
 # Xcode
-ios/CWSwap.xcodeproj/xcuserdata/
-ios/CWSwap.xcodeproj/project.xcworkspace/xcuserdata/
+CWSwap.xcodeproj/xcuserdata/
+CWSwap.xcodeproj/project.xcworkspace/xcuserdata/
 DerivedData/
 *.xcuserstate
 
@@ -12,7 +12,7 @@ DerivedData/
 
 # Environment
 .env
-ios/Secrets.xcconfig
+Secrets.xcconfig
 
 # Build artifacts
 build/

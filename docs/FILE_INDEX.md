@@ -16,13 +16,13 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `scraper/qrz.rs` | QRZ Forums scraper: login, listing page parsing, thread detail extraction, rate limiting |
 | `scraper/price_extractor.rs` | Regex-based price extraction from listing text (includes unit tests) |
 
-## iOS App — `ios/CWSwap/`
+## iOS App — `CWSwap/`
 
 ### Config
 
 | File | Purpose |
 |------|---------|
-| `ios/project.yml` | XcodeGen spec: targets, deployment target, Swift version, build settings, SPM deps (SwiftSoup, KeychainAccess, FeedKit) |
+| `project.yml` | XcodeGen spec: targets, deployment target, Swift version, build settings, SPM deps (SwiftSoup, KeychainAccess) |
 | `CWSwapApp.swift` | App entry point, scene setup, SwiftData modelContainer |
 
 ### Models
