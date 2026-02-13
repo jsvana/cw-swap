@@ -10,11 +10,10 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `api/mod.rs` | REST API route handlers: listings query, single listing, categories, image proxy, health check |
 | `db/mod.rs` | PostgreSQL connection, inline schema/migrations, query functions (query_listings, upsert_listing, get_categories) |
 | `models/mod.rs` | Model re-exports |
-| `models/listing.rs` | Listing, Source, Status, Category, AuctionMeta, AuctionStatus structs/enums |
+| `models/listing.rs` | Listing, Source, Status, Category structs/enums |
 | `models/price.rs` | Price struct (amount, currency, shipping, OBO) |
 | `scraper/mod.rs` | Scraper module re-exports |
 | `scraper/qrz.rs` | QRZ Forums scraper: login, listing page parsing, thread detail extraction, rate limiting |
-| `scraper/hibid.rs` | HiBid GraphQL auction client: LotSearch, AuctionSearch, lot-to-listing mapping, info lot filtering |
 | `scraper/price_extractor.rs` | Regex-based price extraction from listing text (includes unit tests) |
 
 ## iOS App — `ios/CWSwap/`

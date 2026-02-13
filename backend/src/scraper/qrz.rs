@@ -464,7 +464,6 @@ pub fn parse_thread_detail(html: &str, thread_id: i64, source_url: &str) -> Resu
         date_modified,
         replies: 0,
         views: 0,
-        auction_meta: None,
     })
 }
 

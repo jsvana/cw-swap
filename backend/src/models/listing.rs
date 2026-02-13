@@ -8,7 +8,6 @@ use super::Price;
 pub enum Source {
     Qrz,
     Qth,
-    HiBid,
 }
 
 impl std::fmt::Display for Source {
@@ -16,7 +15,6 @@ impl std::fmt::Display for Source {
         match self {
             Source::Qrz => write!(f, "qrz"),
             Source::Qth => write!(f, "qth"),
-            Source::HiBid => write!(f, "hibid"),
         }
     }
 }
@@ -27,19 +25,9 @@ impl std::str::FromStr for Source {
         match s.to_lowercase().as_str() {
             "qrz" => Ok(Source::Qrz),
             "qth" => Ok(Source::Qth),
-            "hibid" => Ok(Source::HiBid),
             _ => Err(format!("unknown source: {s}")),
         }
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ListingType {
-    ForSale,
-    Wanted,
-    Trade,
-    Auction,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -156,36 +144,6 @@ impl std::fmt::Display for Category {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum AuctionStatus {
-    Open,
-    Closing,
-    Closed,
-    NotYetLive,
-    Live,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AuctionMeta {
-    pub current_bid: Option<f64>,
-    pub min_bid: Option<f64>,
-    pub bid_count: u32,
-    pub high_bid: Option<f64>,
-    pub buy_now: Option<f64>,
-    pub auction_status: AuctionStatus,
-    pub time_left_seconds: Option<i64>,
-    pub time_left_display: Option<String>,
-    pub closes_at: Option<DateTime<Utc>>,
-    pub reserve_met: Option<bool>,
-    pub lot_number: String,
-    pub auction_id: i64,
-    pub lot_id: i64,
-    pub shipping_offered: bool,
-    pub bid_url: String,
-    pub auctioneer_name: String,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Listing {
     pub id: String,
@@ -205,7 +163,6 @@ pub struct Listing {
     pub date_modified: Option<DateTime<Utc>>,
     pub replies: i32,
     pub views: i32,
-    pub auction_meta: Option<AuctionMeta>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

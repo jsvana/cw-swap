@@ -37,7 +37,6 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
             date_modified TIMESTAMPTZ,
             replies INTEGER NOT NULL DEFAULT 0,
             views INTEGER NOT NULL DEFAULT 0,
-            auction_meta_json TEXT,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
@@ -91,10 +90,6 @@ pub async fn run_migrations(pool: &PgPool) -> Result<()> {
 
 pub async fn upsert_listing(pool: &PgPool, listing: &Listing) -> Result<()> {
     let photo_urls: Vec<&str> = listing.photo_urls.iter().map(|s| s.as_str()).collect();
-    let auction_meta_json = listing
-        .auction_meta
-        .as_ref()
-        .and_then(|m| serde_json::to_string(m).ok());
 
     sqlx::query(
         r#"
@@ -103,14 +98,12 @@ pub async fn upsert_listing(pool: &PgPool, listing: &Listing) -> Result<()> {
             status, callsign, member_id, avatar_url,
             price_amount, price_currency, price_includes_shipping, price_obo,
             photo_urls, category, date_posted, date_modified, replies, views,
-            auction_meta_json,
             updated_at
         ) VALUES (
             $1, $2, $3, $4, $5, $6,
             $7, $8, $9, $10,
             $11, $12, $13, $14,
             $15, $16, $17, $18, $19, $20,
-            $21,
             NOW()
         )
         ON CONFLICT (id) DO UPDATE SET
@@ -126,7 +119,6 @@ pub async fn upsert_listing(pool: &PgPool, listing: &Listing) -> Result<()> {
             date_modified = EXCLUDED.date_modified,
             replies = EXCLUDED.replies,
             views = EXCLUDED.views,
-            auction_meta_json = EXCLUDED.auction_meta_json,
             updated_at = NOW()
         "#,
     )
@@ -150,7 +142,6 @@ pub async fn upsert_listing(pool: &PgPool, listing: &Listing) -> Result<()> {
     .bind(listing.date_modified)
     .bind(listing.replies)
     .bind(listing.views)
-    .bind(auction_meta_json)
     .execute(pool)
     .await?;
 
@@ -170,7 +161,6 @@ pub struct ListingQuery {
     pub sort: Option<String>,
     pub page: i32,
     pub per_page: i32,
-    pub listing_type: Option<String>,
 }
 
 pub async fn query_listings(pool: &PgPool, query: &ListingQuery) -> Result<ListingsPage> {
@@ -215,17 +205,6 @@ pub async fn query_listings(pool: &PgPool, query: &ListingQuery) -> Result<Listi
     if query.has_photo == Some(true) {
         conditions.push("array_length(photo_urls, 1) > 0".to_string());
     }
-    if let Some(ref listing_type) = query.listing_type {
-        match listing_type.to_lowercase().as_str() {
-            "auction" => {
-                conditions.push("auction_meta_json IS NOT NULL".to_string());
-            }
-            "sale" | "for_sale" => {
-                conditions.push("auction_meta_json IS NULL".to_string());
-            }
-            _ => {}
-        }
-    }
 
     let where_clause = conditions.join(" AND ");
 
@@ -233,10 +212,6 @@ pub async fn query_listings(pool: &PgPool, query: &ListingQuery) -> Result<Listi
         Some("oldest") => "date_posted ASC",
         Some("price_asc") => "price_amount ASC NULLS LAST",
         Some("price_desc") => "price_amount DESC NULLS LAST",
-        Some("closing_soon") => {
-            // For auctions, parse closes_at from JSON and sort by it
-            "CAST(auction_meta_json::json->>'closes_at' AS TIMESTAMPTZ) ASC NULLS LAST"
-        }
         _ => "date_posted DESC",
     };
 
@@ -372,7 +347,6 @@ struct ListingRow {
     date_modified: Option<chrono::DateTime<Utc>>,
     replies: i32,
     views: i32,
-    auction_meta_json: Option<String>,
     #[allow(dead_code)]
     created_at: chrono::DateTime<Utc>,
     #[allow(dead_code)]
@@ -381,7 +355,7 @@ struct ListingRow {
 
 impl ListingRow {
     fn into_listing(self) -> Listing {
-        use crate::models::{AuctionMeta, Price, Source};
+        use crate::models::{Price, Source};
         let source = self.source.parse::<Source>().unwrap_or(Source::Qrz);
         let status = self.status.parse::<ListingStatus>().unwrap_or(ListingStatus::ForSale);
         let price = self.price_amount.map(|amount| Price {
@@ -390,11 +364,6 @@ impl ListingRow {
             includes_shipping: self.price_includes_shipping.unwrap_or(false),
             obo: self.price_obo.unwrap_or(false),
         });
-
-        let auction_meta = self
-            .auction_meta_json
-            .as_ref()
-            .and_then(|json| serde_json::from_str::<AuctionMeta>(json).ok());
 
         Listing {
             id: self.id,
@@ -414,7 +383,6 @@ impl ListingRow {
             date_modified: self.date_modified,
             replies: self.replies,
             views: self.views,
-            auction_meta,
         }
     }
 }
