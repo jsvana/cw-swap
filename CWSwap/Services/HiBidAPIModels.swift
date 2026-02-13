@@ -41,7 +41,7 @@ struct HiBidPagedResults: Decodable, Sendable {
 struct HiBidLot: Decodable, Sendable {
     let auction: HiBidAuctionMinimum?
     let bidAmount: Double?
-    let bidQuantity: Int?
+    let bidQuantity: String?
     let description: String?
     let featuredPicture: HiBidPicture?
     let id: Int
@@ -50,24 +50,27 @@ struct HiBidLot: Decodable, Sendable {
     let lotNumber: String?
     let lotState: HiBidLotState?
     let pictureCount: Int?
-    let quantity: Int?
+    let quantity: Double?
     let shippingOffered: Bool?
     let site: HiBidSite?
 }
 
 struct HiBidAuctionMinimum: Decodable, Sendable {
     let id: Int?
-    let name: String?
+    let eventName: String?
+    let lotCount: Int?
     let auctioneer: HiBidAuctioneer?
-    let status: String?
-    let startDate: String?
-    let endDate: String?
+    let auctionState: HiBidAuctionState?
+}
+
+struct HiBidAuctionState: Decodable, Sendable {
+    let auctionStatus: String?
+    let openLotCount: Int?
 }
 
 struct HiBidAuctioneer: Decodable, Sendable {
     let id: Int?
     let name: String?
-    let subdomain: String?
 }
 
 struct HiBidPicture: Decodable, Sendable {
@@ -94,7 +97,7 @@ struct HiBidLotState: Decodable, Sendable {
     let showReserveStatus: Bool?
     let status: String?
     let timeLeft: String?
-    let timeLeftSeconds: Int?
+    let timeLeftSeconds: Double?
 }
 
 struct HiBidSite: Decodable, Sendable {
@@ -114,17 +117,12 @@ struct HiBidAuctionSearchResult: Decodable, Sendable {
 
 struct HiBidAuctionPagedResults: Decodable, Sendable {
     let totalCount: Int
-    let results: [HiBidAuctionResult]
+    let results: [HiBidAuctionMatch]
 }
 
-struct HiBidAuctionResult: Decodable, Sendable {
-    let id: Int
-    let name: String?
-    let auctioneer: HiBidAuctioneer?
-    let status: String?
-    let startDate: String?
-    let endDate: String?
-    let lotCount: Int?
+struct HiBidAuctionMatch: Decodable, Sendable {
+    let matchinglotcount: Int?
+    let auction: HiBidAuctionMinimum?
 }
 
 // MARK: - Configuration
@@ -132,12 +130,14 @@ struct HiBidAuctionResult: Decodable, Sendable {
 struct HiBidAuctioneerConfig: Sendable {
     let subdomain: String
     let name: String
+    let auctioneerId: Int
     let pinnedAuctionIds: [Int]
 
     static let knownAuctioneers: [HiBidAuctioneerConfig] = [
         HiBidAuctioneerConfig(
             subdomain: "schulmanauction",
             name: "Schulman Auction & Realty",
+            auctioneerId: 67925,
             pinnedAuctionIds: []
         ),
     ]

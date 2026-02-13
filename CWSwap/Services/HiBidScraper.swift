@@ -28,7 +28,7 @@ final class HiBidScraper: Sendable {
             do {
                 let auctionIds: [Int]
                 if auctioneer.pinnedAuctionIds.isEmpty {
-                    auctionIds = try await discoverActiveAuctions(subdomain: auctioneer.subdomain)
+                    auctionIds = try await discoverActiveAuctions(subdomain: auctioneer.subdomain, auctioneerId: auctioneer.auctioneerId)
                 } else {
                     auctionIds = auctioneer.pinnedAuctionIds
                 }
@@ -68,7 +68,7 @@ final class HiBidScraper: Sendable {
             do {
                 let auctionIds: [Int]
                 if auctioneer.pinnedAuctionIds.isEmpty {
-                    auctionIds = try await discoverActiveAuctions(subdomain: auctioneer.subdomain)
+                    auctionIds = try await discoverActiveAuctions(subdomain: auctioneer.subdomain, auctioneerId: auctioneer.auctioneerId)
                 } else {
                     auctionIds = auctioneer.pinnedAuctionIds
                 }
@@ -119,13 +119,16 @@ final class HiBidScraper: Sendable {
               results {
                 auction {
                   id
-                  name
+                  eventName
+                  lotCount
                   auctioneer {
                     id
                     name
-                    subdomain
                   }
-                  status
+                  auctionState {
+                    auctionStatus
+                    openLotCount
+                  }
                 }
                 bidAmount
                 bidQuantity
@@ -207,26 +210,31 @@ final class HiBidScraper: Sendable {
         return results
     }
 
-    private func discoverActiveAuctions(subdomain: String) async throws -> [Int] {
+    private func discoverActiveAuctions(subdomain: String, auctioneerId: Int) async throws -> [Int] {
         let query = """
-        query AuctionSearch($pageNumber: Int!, $pageLength: Int!, $status: AuctionLotStatus = null) {
+        query AuctionsByAuctioneerSearch($auctioneerId: Int, $status: AuctionLotStatus = null, $pageNumber: Int, $pageLength: Int) {
           auctionSearch(
-            input: { status: $status }
+            input: { auctioneerId: $auctioneerId, status: $status }
             pageNumber: $pageNumber
             pageLength: $pageLength
           ) {
             pagedResults {
               totalCount
               results {
-                id
-                name
-                auctioneer {
+                matchinglotcount
+                auction {
                   id
-                  name
-                  subdomain
+                  eventName
+                  lotCount
+                  auctioneer {
+                    id
+                    name
+                  }
+                  auctionState {
+                    auctionStatus
+                    openLotCount
+                  }
                 }
-                status
-                lotCount
               }
             }
           }
@@ -234,6 +242,7 @@ final class HiBidScraper: Sendable {
         """
 
         let variables: [String: Any] = [
+            "auctioneerId": auctioneerId,
             "pageNumber": 1,
             "pageLength": 20,
         ]
@@ -257,10 +266,14 @@ final class HiBidScraper: Sendable {
             return []
         }
 
-        // Return IDs of auctions that appear active (have lots)
+        // Return IDs of auctions that have lots
         return results
-            .filter { ($0.lotCount ?? 0) > 0 }
-            .map(\.id)
+            .compactMap { match in
+                guard let auction = match.auction,
+                      let id = auction.id,
+                      (auction.lotCount ?? 0) > 0 else { return nil as Int? }
+                return id
+            }
     }
 
     // MARK: - HTTP
@@ -339,7 +352,7 @@ final class HiBidScraper: Sendable {
             highBid: lotState?.highBid,
             buyNow: (lotState?.buyNow ?? 0) > 0 ? lotState?.buyNow : nil,
             auctionStatus: auctionStatus,
-            timeLeftSeconds: lotState?.timeLeftSeconds,
+            timeLeftSeconds: lotState?.timeLeftSeconds.map { Int($0) },
             timeLeftDisplay: lotState?.timeLeft,
             closesAt: closesAt,
             reserveMet: lotState?.showReserveStatus == true ? lotState?.reserveSatisfied : nil,
