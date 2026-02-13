@@ -39,6 +39,8 @@ struct ListingsParams {
     sort: Option<String>,
     page: Option<i32>,
     per_page: Option<i32>,
+    #[serde(rename = "type")]
+    listing_type: Option<String>,
 }
 
 async fn list_listings(
@@ -57,6 +59,7 @@ async fn list_listings(
         sort: params.sort,
         page: params.page.unwrap_or(1).max(1),
         per_page: params.per_page.unwrap_or(20).clamp(1, 100),
+        listing_type: params.listing_type,
     };
 
     match db::query_listings(&state.pool, &query).await {
@@ -102,7 +105,9 @@ async fn proxy_image(
     Query(params): Query<ProxyParams>,
 ) -> impl IntoResponse {
     // Only proxy URLs from known domains
-    let allowed = params.url.contains("qrz.com") || params.url.contains("qth.com");
+    let allowed = params.url.contains("qrz.com")
+        || params.url.contains("qth.com")
+        || params.url.contains("hibid.com");
     if !allowed {
         return StatusCode::FORBIDDEN.into_response();
     }

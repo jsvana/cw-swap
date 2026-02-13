@@ -29,6 +29,7 @@ final class PersistedListing {
     var contentHash: String = ""
     var dateScraped: Date = Date()
     var isBookmarked: Bool = false
+    var auctionMetaData: Data?
 
     init() {}
 
@@ -58,6 +59,7 @@ final class PersistedListing {
         self.contactMethodsData = (try? JSONEncoder().encode(listing.contactMethods)) ?? Data()
         self.contentHash = listing.contentHash
         self.dateScraped = Date()
+        self.auctionMetaData = listing.auctionMeta.flatMap { try? JSONEncoder().encode($0) }
     }
 
     func toListing() -> Listing {
@@ -68,6 +70,7 @@ final class PersistedListing {
         } else {
             nil
         }
+        let auctionMeta: AuctionMeta? = auctionMetaData.flatMap { try? JSONDecoder().decode(AuctionMeta.self, from: $0) }
 
         return Listing(
             id: id,
@@ -89,7 +92,8 @@ final class PersistedListing {
             views: views,
             contactEmail: contactEmail,
             contactPhone: contactPhone,
-            contactMethods: contactMethods
+            contactMethods: contactMethods,
+            auctionMeta: auctionMeta
         )
     }
 }

@@ -195,7 +195,8 @@ final class QRZScraper: Sendable {
                 views: entry.views,
                 contactEmail: listing.contactEmail,
                 contactPhone: listing.contactPhone,
-                contactMethods: listing.contactMethods
+                contactMethods: listing.contactMethods,
+                auctionMeta: nil
             )
         } catch {
             return nil
@@ -365,7 +366,8 @@ final class QRZScraper: Sendable {
             views: 0,
             contactEmail: contactInfo.email,
             contactPhone: contactInfo.phone,
-            contactMethods: contactInfo.methods
+            contactMethods: contactInfo.methods,
+            auctionMeta: nil
         )
     }
 

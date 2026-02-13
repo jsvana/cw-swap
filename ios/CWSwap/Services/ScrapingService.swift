@@ -6,6 +6,7 @@ struct ScrapingService: Sendable {
     private let hamEstateScraper = HamEstateScraper()
     private let ebayScraper = EbayScraper()
     private let craigslistScraper = CraigslistScraper()
+    private let hibidScraper = HiBidScraper()
 
     struct SyncProgress: Sendable {
         let completedSteps: Int
@@ -91,6 +92,15 @@ struct ScrapingService: Sendable {
                 allListings.append(contentsOf: clListings)
             } catch {
                 // Craigslist failure is non-fatal
+            }
+        }
+
+        if source == nil || source == .hibid {
+            do {
+                let hibidListings = try await hibidScraper.fetchListings(page: page)
+                allListings.append(contentsOf: hibidListings)
+            } catch {
+                // HiBid failure is non-fatal
             }
         }
 
@@ -198,6 +208,26 @@ struct ScrapingService: Sendable {
                 }
             }
 
+            // HiBid: GraphQL API, batch result
+            if source == nil || source == .hibid {
+                do {
+                    try await self.hibidScraper.fetchListings(
+                        page: page,
+                        onListing: { listing in
+                            listingCont.yield(listing)
+                        },
+                        onProgress: { completed, total in
+                            progressCont.yield(SyncProgress(completedSteps: completed, totalSteps: total, source: .hibid))
+                        }
+                    )
+                } catch {
+                    progressCont.yield(SyncProgress(
+                        completedSteps: 1, totalSteps: 1, source: .hibid,
+                        errorMessage: error.localizedDescription
+                    ))
+                }
+            }
+
             // HamEstate: one product at a time with progress
             if source == nil || source == .hamestate {
                 do {
@@ -265,6 +295,12 @@ struct ScrapingService: Sendable {
             filtered.sort { ($0.price?.amount ?? 0) < ($1.price?.amount ?? 0) }
         case "price_desc":
             filtered.sort { ($0.price?.amount ?? 0) > ($1.price?.amount ?? 0) }
+        case "closing_soon":
+            filtered.sort { a, b in
+                let aSeconds = a.auctionMeta?.computedTimeLeftSeconds ?? Int.max
+                let bSeconds = b.auctionMeta?.computedTimeLeftSeconds ?? Int.max
+                return aSeconds < bSeconds
+            }
         default:
             filtered.sort { $0.datePosted > $1.datePosted }
         }

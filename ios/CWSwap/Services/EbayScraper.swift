@@ -154,7 +154,8 @@ final class EbayScraper: Sendable {
             views: 0,
             contactEmail: nil,
             contactPhone: nil,
-            contactMethods: ["ebay"]
+            contactMethods: ["ebay"],
+            auctionMeta: nil
         )
     }
 

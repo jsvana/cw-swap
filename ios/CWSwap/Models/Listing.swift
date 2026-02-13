@@ -22,6 +22,7 @@ struct Listing: Identifiable, Hashable, Codable, Sendable {
     let contactEmail: String?
     let contactPhone: String?
     let contactMethods: [String]
+    let auctionMeta: AuctionMeta?
 
     enum CodingKeys: String, CodingKey {
         case id, source, title, description, status, callsign, price, replies, views, category
@@ -35,10 +36,13 @@ struct Listing: Identifiable, Hashable, Codable, Sendable {
         case contactEmail = "contact_email"
         case contactPhone = "contact_phone"
         case contactMethods = "contact_methods"
+        case auctionMeta = "auction_meta"
     }
 
     var hasPhotos: Bool { !photoUrls.isEmpty }
     var hasContactInfo: Bool { contactEmail != nil || contactPhone != nil || !contactMethods.isEmpty }
+
+    var isAuction: Bool { source.isAuction }
 
     var contentHash: String {
         var parts = [title, description, status.rawValue, callsign]
@@ -49,6 +53,9 @@ struct Listing: Identifiable, Hashable, Codable, Sendable {
         if let contactEmail { parts.append(contactEmail) }
         if let contactPhone { parts.append(contactPhone) }
         parts.append(contentsOf: contactMethods)
+        if let auctionMeta {
+            parts.append("\(auctionMeta.bidCount)|\(auctionMeta.highBid ?? 0)|\(auctionMeta.auctionStatus.rawValue)")
+        }
         let joined = parts.joined(separator: "\u{1F}")
         let digest = SHA256.hash(data: Data(joined.utf8))
         return digest.prefix(16).map { String(format: "%02x", $0) }.joined()
