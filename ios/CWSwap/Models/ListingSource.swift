@@ -6,6 +6,7 @@ enum ListingSource: String, Codable, Hashable, CaseIterable, Sendable {
     case hamestate
     case ebay
     case craigslist
+    case hibid
 
     var displayName: String {
         switch self {
@@ -14,6 +15,11 @@ enum ListingSource: String, Codable, Hashable, CaseIterable, Sendable {
         case .hamestate: "HamEstate"
         case .ebay: "eBay"
         case .craigslist: "Craigslist"
+        case .hibid: "HiBid"
         }
+    }
+
+    var isAuction: Bool {
+        self == .hibid
     }
 }

@@ -161,7 +161,8 @@ final class QTHScraper: Sendable {
                 views: 0,
                 contactEmail: contactInfo.email,
                 contactPhone: contactInfo.phone,
-                contactMethods: contactInfo.methods
+                contactMethods: contactInfo.methods,
+                auctionMeta: nil
             ))
         }
 

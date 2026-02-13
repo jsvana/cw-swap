@@ -105,7 +105,8 @@ final class HamEstateScraper: Sendable {
             views: 0,
             contactEmail: nil,
             contactPhone: nil,
-            contactMethods: []
+            contactMethods: [],
+            auctionMeta: nil
         )
     }
 

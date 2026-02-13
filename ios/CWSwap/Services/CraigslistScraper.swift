@@ -153,7 +153,8 @@ final class CraigslistScraper: Sendable {
                             views: listing.views,
                             contactEmail: listing.contactEmail,
                             contactPhone: listing.contactPhone,
-                            contactMethods: listing.contactMethods
+                            contactMethods: listing.contactMethods,
+                            auctionMeta: nil
                         )
                     }
                     return listing
@@ -283,7 +284,8 @@ final class CraigslistScraper: Sendable {
                     views: 0,
                     contactEmail: nil,
                     contactPhone: nil,
-                    contactMethods: []
+                    contactMethods: [],
+                    auctionMeta: nil
                 )
             }
         }
@@ -361,7 +363,8 @@ final class CraigslistScraper: Sendable {
                 views: 0,
                 contactEmail: nil,
                 contactPhone: nil,
-                contactMethods: []
+                contactMethods: [],
+                auctionMeta: nil
             )
         }
     }
@@ -423,7 +426,8 @@ final class CraigslistScraper: Sendable {
                 views: listing.views,
                 contactEmail: contactInfo.email,
                 contactPhone: contactInfo.phone,
-                contactMethods: contactInfo.methods
+                contactMethods: contactInfo.methods,
+                auctionMeta: nil
             )
         } catch {
             return listing

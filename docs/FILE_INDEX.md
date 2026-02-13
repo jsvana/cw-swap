@@ -31,7 +31,8 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 |------|---------|
 | `Models/Listing.swift` | Main listing model (Codable, Sendable, Hashable) with direct URL construction |
 | `Models/Price.swift` | Price with amount, currency, includesShipping, obo |
-| `Models/ListingSource.swift` | Source enum (qrz, qth, hamestate, ebay, craigslist) |
+| `Models/ListingSource.swift` | Source enum (qrz, qth, hamestate, ebay, craigslist, hibid) |
+| `Models/AuctionMeta.swift` | Auction metadata: bid info, time remaining, lot number, status, bid URL |
 | `Models/EbaySearchCategory.swift` | eBay category model (id, name, isEnabled) for user-managed category list |
 | `Models/CraigslistRegion.swift` | Craigslist region model (id, name, isEnabled) for per-region scraping |
 | `Models/CraigslistSearchTerm.swift` | Craigslist search term model (id, term, isEnabled) for configurable queries |
@@ -61,9 +62,11 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `Services/EbayCategoryStore.swift` | @MainActor @Observable category persistence in UserDefaults, taxonomy search |
 | `Services/CraigslistConfig.swift` | Craigslist RSS URL builder, default regions (30 US metros), default search terms |
 | `Services/CraigslistScraper.swift` | Craigslist scraper (Sendable): RSS feed + detail page scraping, FeedKit + SwiftSoup |
+| `Services/HiBidAPIModels.swift` | HiBid GraphQL response types: LotSearch, AuctionSearch, lot/auction models |
+| `Services/HiBidScraper.swift` | HiBid GraphQL client (Sendable): auction discovery, lot fetching, field mapping, info lot filtering |
 | `Services/LocationManager.swift` | @MainActor @Observable CLLocationManager wrapper for single location fix |
 | `Services/CraigslistRegionStore.swift` | @MainActor @Observable region/term persistence in UserDefaults |
-| `Services/ScrapingService.swift` | Coordinates all scrapers (QRZ, QTH, HamEstate, eBay, Craigslist): fetch, filter, sort listings |
+| `Services/ScrapingService.swift` | Coordinates all scrapers (QRZ, QTH, HamEstate, eBay, Craigslist, HiBid): fetch, filter, sort listings |
 | `Services/AuthenticationService.swift` | QRZ login/logout, Keychain credential storage, reauthentication |
 | `Services/ListingStore.swift` | SwiftData persistence: upsert, query, bookmark toggle |
 | `Services/NotificationService.swift` | Local notification authorization and delivery for listing alerts |

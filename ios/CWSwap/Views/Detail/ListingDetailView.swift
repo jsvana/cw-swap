@@ -20,6 +20,9 @@ struct ListingDetailView: View {
             VStack(alignment: .leading, spacing: 16) {
                 imageSection
                 headerSection
+                if let auctionMeta = listing.auctionMeta {
+                    auctionInfoSection(auctionMeta)
+                }
                 descriptionSection
                 if listing.hasContactInfo {
                     contactSection
@@ -91,7 +94,16 @@ struct ListingDetailView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Status
-            if listing.status != .forSale {
+            if listing.isAuction, let auctionMeta = listing.auctionMeta {
+                // Auction status badge
+                Text(auctionMeta.auctionStatus.displayName)
+                    .font(.caption.bold())
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(auctionStatusColor(auctionMeta.auctionStatus))
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+            } else if listing.status != .forSale {
                 Text(listing.status.displayName)
                     .font(.caption.bold())
                     .padding(.horizontal, 8)
@@ -105,16 +117,35 @@ struct ListingDetailView: View {
             Text(listing.title)
                 .font(.title2.bold())
 
-            // Price
-            if let price = listing.formattedPrice {
+            // Price / Bid
+            if let auctionMeta = listing.auctionMeta {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 4) {
+                        Text(auctionMeta.formattedBid ?? "No bids yet")
+                            .font(.title.weight(.semibold))
+                            .foregroundStyle(Color.accentColor)
+                        Text("(\(auctionMeta.bidCount) \(auctionMeta.bidCount == 1 ? "bid" : "bids"))")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    // Time remaining
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.caption)
+                        Text(auctionMeta.computedTimeLeftDisplay)
+                            .font(.subheadline.weight(.medium))
+                    }
+                    .foregroundStyle(timeLeftTextColor(auctionMeta.timeLeftColor))
+                }
+            } else if let price = listing.formattedPrice {
                 Text(price)
                     .font(.title.weight(.semibold))
                     .foregroundStyle(Color.accentColor)
             }
 
-            // Seller info
+            // Seller / Auctioneer info + action button
             HStack(spacing: 8) {
-                if let url = listing.avatarURL {
+                if !listing.isAuction, let url = listing.avatarURL {
                     AsyncImage(url: url) { image in
                         image.resizable().aspectRatio(contentMode: .fill)
                     } placeholder: {
@@ -125,12 +156,26 @@ struct ListingDetailView: View {
                     .clipShape(Circle())
                 }
 
-                Text(listing.callsign)
-                    .font(.body.monospaced().weight(.medium))
+                if listing.isAuction {
+                    Text(listing.callsign)
+                        .font(.body.weight(.medium))
+                } else {
+                    Text(listing.callsign)
+                        .font(.body.monospaced().weight(.medium))
+                }
 
                 Spacer()
 
-                if listing.source == .ebay {
+                if listing.isAuction {
+                    if let url = listing.auctionMeta?.bidURL {
+                        Link(destination: url) {
+                            Label("Bid on HiBid", systemImage: "gavel")
+                                .font(.subheadline.weight(.medium))
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.purple)
+                    }
+                } else if listing.source == .ebay {
                     if let url = listing.sourceURL {
                         Link(destination: url) {
                             Label("View on eBay", systemImage: "safari")
@@ -168,6 +213,107 @@ struct ListingDetailView: View {
             }
         }
         .padding(.horizontal)
+    }
+
+    // MARK: - Auction Info Section
+
+    @ViewBuilder
+    private func auctionInfoSection(_ meta: AuctionMeta) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Auction Details")
+                .font(.subheadline.weight(.semibold))
+
+            // Bid info grid
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+            ], spacing: 8) {
+                if let highBid = meta.formattedBid {
+                    auctionInfoCell(label: "High Bid", value: highBid)
+                }
+
+                if let minBid = meta.minBid, minBid > 0 {
+                    let formatter = NumberFormatter()
+                    let _ = formatter.numberStyle = .currency
+                    let _ = formatter.currencyCode = "USD"
+                    auctionInfoCell(label: "Min Next Bid", value: formatter.string(from: NSNumber(value: minBid)) ?? "$\(Int(minBid))")
+                }
+
+                auctionInfoCell(label: "Bids", value: "\(meta.bidCount)")
+
+                if let buyNow = meta.formattedBuyNow {
+                    auctionInfoCell(label: "Buy Now", value: buyNow)
+                }
+            }
+
+            // Reserve status
+            if let reserveMet = meta.reserveMet {
+                HStack(spacing: 4) {
+                    Image(systemName: reserveMet ? "checkmark.circle.fill" : "xmark.circle")
+                        .foregroundStyle(reserveMet ? .green : .orange)
+                    Text(reserveMet ? "Reserve met" : "Reserve not met")
+                        .font(.subheadline)
+                        .foregroundStyle(reserveMet ? .green : .orange)
+                }
+            }
+
+            // Shipping
+            if meta.shippingOffered {
+                HStack(spacing: 4) {
+                    Image(systemName: "shippingbox")
+                    Text("Shipping offered")
+                        .font(.subheadline)
+                }
+                .foregroundStyle(.secondary)
+            }
+
+            // Auctioneer
+            LabeledContent("Auctioneer") {
+                Text(meta.auctioneerName)
+            }
+            .font(.subheadline)
+
+            if !meta.lotNumber.isEmpty {
+                LabeledContent("Lot") {
+                    Text(meta.lotNumber)
+                }
+                .font(.subheadline)
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    @ViewBuilder
+    private func auctionInfoCell(label: String, value: String) -> some View {
+        VStack(spacing: 2) {
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.subheadline.weight(.medium))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func auctionStatusColor(_ status: AuctionStatus) -> Color {
+        switch status {
+        case .open: .green
+        case .closing, .live: .orange
+        case .closed: .red
+        case .notYetLive: .gray
+        }
+    }
+
+    private func timeLeftTextColor(_ color: AuctionMeta.TimeLeftColor) -> Color {
+        switch color {
+        case .green: .green
+        case .amber: .orange
+        case .red: .red
+        case .gray: .secondary
+        }
     }
 
     @ViewBuilder
@@ -265,4 +411,3 @@ struct ListingDetailView: View {
         .padding(.bottom, 32)
     }
 }
-

@@ -18,7 +18,6 @@ struct FilterSheetView: View {
                             Text(source.displayName).tag(source as ListingSource?)
                         }
                     }
-                    .pickerStyle(.segmented)
                 }
 
                 Section("Price Range") {

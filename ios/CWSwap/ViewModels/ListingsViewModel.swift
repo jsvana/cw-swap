@@ -46,6 +46,7 @@ class ListingsViewModel {
         case oldest
         case priceAsc = "price_asc"
         case priceDesc = "price_desc"
+        case closingSoon = "closing_soon"
 
         var id: String { rawValue }
 
@@ -55,6 +56,7 @@ class ListingsViewModel {
             case .oldest: "Oldest"
             case .priceAsc: "Price: Low \u{2192} High"
             case .priceDesc: "Price: High \u{2192} Low"
+            case .closingSoon: "Closing Soon"
             }
         }
     }
