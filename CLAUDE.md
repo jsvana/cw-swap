@@ -38,23 +38,6 @@ When spawning subagents via the Task tool, select models based on task complexit
 - Upgrade to **Opus** when: first attempt failed, task spans 5+ files, architectural decisions, or security-critical code
 - Downgrade to **Haiku** when: task is repetitive, instructions are very clear, or using as a "worker" in multi-agent setup
 
-## Build & Test Commands
-
-### iOS (SwiftUI)
-```bash
-xcodegen generate      # Regenerate Xcode project from project.yml
-xcodebuild -project CWSwap.xcodeproj -scheme CWSwap \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
-```
-
-Always run `xcodegen generate` after modifying `project.yml`.
-
-### Backend (Rust — reference only)
-```bash
-cd backend && cargo check        # Type-check
-cd backend && cargo test         # Run tests
-```
-
 ## Architecture
 
 ### iOS App
@@ -88,9 +71,6 @@ iOS Views → ViewModels (@Observable) → ScrapingService → QRZScraper/QTHScr
 
 ### SwiftUI Tab Naming
 SwiftUI's `Tab` type conflicts with a local enum. The codebase uses `AppTab` enum and `SwiftUI.Tab` for the framework type.
-
-### Xcode 26 Simulators
-Available simulators: iPhone 17 Pro, iPhone Air, iPad (no iPhone 16 series).
 
 ### Image URLs
 Images are loaded directly from source URLs (QRZ, QTH) — no proxying needed since there's no backend.
