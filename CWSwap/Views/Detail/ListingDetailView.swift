@@ -203,7 +203,8 @@ struct ListingDetailView: View {
                     .sheet(isPresented: $showingContactSheet) {
                         NewConversationView(
                             recipient: listing.callsign,
-                            title: "Re: \(listing.title)"
+                            title: "Re: \(listing.title)",
+                            listingUrl: listing.sourceUrl
                         )
                     }
                     .alert("Login Required", isPresented: $showingLoginAlert) {

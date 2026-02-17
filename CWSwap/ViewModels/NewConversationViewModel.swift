@@ -13,10 +13,12 @@ class NewConversationViewModel {
     var isSending = false
     var error: Error?
     var didSend = false
+    var listingUrl: String?
 
-    init(recipient: String = "", title: String = "") {
+    init(recipient: String = "", title: String = "", listingUrl: String? = nil) {
         self.recipient = recipient
         self.title = title
+        self.listingUrl = listingUrl
     }
 
     func send() async {
@@ -34,6 +36,12 @@ class NewConversationViewModel {
                 message: body
             )
             didSend = true
+
+            if let listingUrl {
+                var mappings = UserDefaults.standard.dictionary(forKey: "conversationListingUrls") as? [String: String] ?? [:]
+                mappings[title] = listingUrl
+                UserDefaults.standard.set(mappings, forKey: "conversationListingUrls")
+            }
         } catch {
             self.error = error
         }

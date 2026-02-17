@@ -2,13 +2,22 @@ import SwiftUI
 
 struct ConversationDetailView: View {
     @State private var viewModel: ConversationDetailViewModel
+    @Environment(\.openURL) private var openURL
 
     init(conversation: Conversation) {
         _viewModel = State(initialValue: ConversationDetailViewModel(conversation: conversation))
     }
 
+    private var sourceListingUrl: URL? {
+        let mappings = UserDefaults.standard.dictionary(forKey: "conversationListingUrls") as? [String: String] ?? [:]
+        return mappings[viewModel.conversation.title].flatMap { URL(string: $0) }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
+            if let url = sourceListingUrl {
+                listingBanner(url: url)
+            }
             messagesList
             replyBar
         }
@@ -16,6 +25,27 @@ struct ConversationDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.loadMessages()
+        }
+    }
+
+    @ViewBuilder
+    private func listingBanner(url: URL) -> some View {
+        Button {
+            openURL(url)
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "tag")
+                    .font(.subheadline)
+                Text("View Original Listing")
+                    .font(.subheadline.weight(.medium))
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(.caption)
+            }
+            .foregroundStyle(Color.accentColor)
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+            .background(Color(.systemGray6))
         }
     }
 
@@ -90,6 +120,7 @@ struct ConversationDetailView: View {
 struct MessageBubbleView: View {
     let message: Message
     let isCurrentUser: Bool
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -129,13 +160,19 @@ struct MessageBubbleView: View {
 
     @ViewBuilder
     private var avatar: some View {
-        AsyncImage(url: message.avatarURL.flatMap { URL(string: $0) }) { image in
-            image.resizable().aspectRatio(contentMode: .fill)
-        } placeholder: {
-            Image(systemName: "person.circle.fill")
-                .foregroundStyle(.secondary)
+        Button {
+            if let url = URL(string: "https://www.qrz.com/db/\(message.author)") {
+                openURL(url)
+            }
+        } label: {
+            AsyncImage(url: message.avatarURL.flatMap { URL(string: $0) }) { image in
+                image.resizable().aspectRatio(contentMode: .fill)
+            } placeholder: {
+                Image(systemName: "person.circle.fill")
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: 28, height: 28)
+            .clipShape(Circle())
         }
-        .frame(width: 28, height: 28)
-        .clipShape(Circle())
     }
 }

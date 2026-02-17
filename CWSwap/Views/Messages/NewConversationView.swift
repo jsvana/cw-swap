@@ -4,8 +4,8 @@ struct NewConversationView: View {
     @State private var viewModel: NewConversationViewModel
     @Environment(\.dismiss) private var dismiss
 
-    init(recipient: String = "", title: String = "") {
-        _viewModel = State(initialValue: NewConversationViewModel(recipient: recipient, title: title))
+    init(recipient: String = "", title: String = "", listingUrl: String? = nil) {
+        _viewModel = State(initialValue: NewConversationViewModel(recipient: recipient, title: title, listingUrl: listingUrl))
     }
 
     var body: some View {
