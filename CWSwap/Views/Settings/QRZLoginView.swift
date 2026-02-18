@@ -8,6 +8,8 @@ struct QRZLoginView: View {
         Form {
             if viewModel.isLoggedIn {
                 loggedInSection
+            } else if viewModel.needsTwoFactor {
+                twoFactorSection
             } else {
                 loginFormSection
             }
@@ -39,6 +41,42 @@ struct QRZLoginView: View {
             Button("Log Out", role: .destructive) {
                 viewModel.logout()
             }
+        }
+    }
+
+    @ViewBuilder
+    private var twoFactorSection: some View {
+        Section("Two-Factor Authentication") {
+            TextField("Verification Code", text: $viewModel.twoFactorCode)
+                .keyboardType(.numberPad)
+                .textContentType(.oneTimeCode)
+        }
+
+        Section {
+            Button {
+                Task { await viewModel.submitTwoFactorCode() }
+            } label: {
+                HStack {
+                    Text("Verify")
+                    Spacer()
+                    if viewModel.isLoading {
+                        ProgressView()
+                    }
+                }
+            }
+            .disabled(viewModel.twoFactorCode.isEmpty || viewModel.isLoading)
+        }
+
+        Section {
+            Button("Back to Login", role: .cancel) {
+                viewModel.cancelTwoFactor()
+            }
+        }
+
+        Section {
+            Text("Enter the 6-digit code from your authenticator app.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 

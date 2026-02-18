@@ -15,6 +15,17 @@ enum ScraperError: Error, LocalizedError {
     }
 }
 
+struct TwoFactorChallenge: Sendable {
+    let verificationURL: URL
+    let token: String?
+    let codeFieldName: String
+}
+
+enum LoginResult: Sendable {
+    case success
+    case twoFactorRequired(TwoFactorChallenge)
+}
+
 struct ThreadEntry: Sendable {
     let threadId: Int64
     let title: String
@@ -42,7 +53,7 @@ final class QRZScraper: Sendable {
 
     // MARK: - Login
 
-    func login(username: String, password: String) async throws {
+    func login(username: String, password: String) async throws -> LoginResult {
         // Step 1: GET main QRZ login page to extract CSRF token
         let loginURL = URL(string: "https://www.qrz.com/login")!
         let (loginData, _) = try await session.data(from: loginURL)
@@ -65,7 +76,7 @@ final class QRZScraper: Sendable {
         }
         loginRequest.httpBody = formParts.joined(separator: "&").data(using: .utf8)
 
-        let (responseData, _) = try await session.data(for: loginRequest)
+        let (responseData, response) = try await session.data(for: loginRequest)
         let responseBody = String(data: responseData, encoding: .utf8) ?? ""
 
         if responseBody.contains("Incorrect password")
@@ -74,7 +85,56 @@ final class QRZScraper: Sendable {
             throw ScraperError.loginFailed("Incorrect username or password")
         }
 
+        // Check for two-factor authentication challenge
+        if let challenge = detectTwoFactorChallenge(html: responseBody, response: response) {
+            return .twoFactorRequired(challenge)
+        }
+
         // Step 3: Also log into XenForo forums
+        try await loginToForums(username: username, password: password)
+
+        return .success
+    }
+
+    func submitTwoFactorCode(
+        _ code: String,
+        challenge: TwoFactorChallenge,
+        username: String,
+        password: String
+    ) async throws {
+        var request = URLRequest(url: challenge.verificationURL)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+
+        var formParts = [
+            "\(challenge.codeFieldName)=\(urlEncode(code))",
+        ]
+        if let token = challenge.token {
+            formParts.append("_token=\(urlEncode(token))")
+        }
+        request.httpBody = formParts.joined(separator: "&").data(using: .utf8)
+
+        let (responseData, response) = try await session.data(for: request)
+        let responseBody = String(data: responseData, encoding: .utf8) ?? ""
+
+        // Check if we're still on a 2FA page (code was wrong)
+        if detectTwoFactorChallenge(html: responseBody, response: response) != nil {
+            throw ScraperError.loginFailed("Invalid verification code")
+        }
+
+        // Check for explicit error messages
+        let responseLower = responseBody.lowercased()
+        if responseLower.contains("invalid") && responseLower.contains("code")
+            || responseLower.contains("incorrect") && responseLower.contains("code")
+            || responseLower.contains("expired") {
+            throw ScraperError.loginFailed("Invalid or expired verification code")
+        }
+
+        // 2FA complete — now log into XenForo forums
+        try await loginToForums(username: username, password: password)
+    }
+
+    private func loginToForums(username: String, password: String) async throws {
         let forumsLoginURL = URL(string: "\(Self.qrzBase)?login/")!
         let (forumsData, _) = try await session.data(from: forumsLoginURL)
         let forumsPage = String(data: forumsData, encoding: .utf8) ?? ""
@@ -628,6 +688,57 @@ final class QRZScraper: Sendable {
     private static func resolveURL(_ url: String) -> String {
         if url.hasPrefix("http") { return url }
         return "https://forums.qrz.com/\(url.trimmingCharacters(in: CharacterSet(charactersIn: "/")))"
+    }
+
+    private func detectTwoFactorChallenge(html: String, response: URLResponse) -> TwoFactorChallenge? {
+        // Check response URL for 2FA indicators
+        let responseURL = response.url
+        let urlString = responseURL?.absoluteString.lowercased() ?? ""
+        let urlIndicates2FA = urlString.contains("twofactor")
+            || urlString.contains("2fa")
+            || urlString.contains("two-factor")
+
+        // Check page content for 2FA indicators
+        let htmlLower = html.lowercased()
+        let contentIndicates2FA = htmlLower.contains("two-factor authentication")
+            || htmlLower.contains("two factor authentication")
+            || htmlLower.contains("verification code")
+            || htmlLower.contains("authenticator app")
+            || htmlLower.contains("twofactor")
+
+        guard urlIndicates2FA || contentIndicates2FA else { return nil }
+
+        guard let document = try? SwiftSoup.parse(html) else { return nil }
+
+        // Find the 2FA code input field name
+        let candidateFields = ["one_time_password", "code", "otp", "totp_code", "2fa_code", "two_factor_code"]
+        var codeFieldName = "one_time_password"
+        for name in candidateFields {
+            if (try? document.select("input[name=\(name)]").first()) != nil {
+                codeFieldName = name
+                break
+            }
+        }
+
+        let token = extractHiddenInput(html: html, name: "_token")
+
+        // Resolve the form action URL
+        var verificationURL = responseURL ?? URL(string: "https://www.qrz.com/login/twofactor")!
+        if let form = try? document.select("form").first(),
+           let action = try? form.attr("action"),
+           !action.isEmpty {
+            if action.hasPrefix("http"), let url = URL(string: action) {
+                verificationURL = url
+            } else if let base = responseURL, let url = URL(string: action, relativeTo: base) {
+                verificationURL = url.absoluteURL
+            }
+        }
+
+        return TwoFactorChallenge(
+            verificationURL: verificationURL,
+            token: token,
+            codeFieldName: codeFieldName
+        )
     }
 
     private func extractHiddenInput(html: String, name: String) -> String? {
