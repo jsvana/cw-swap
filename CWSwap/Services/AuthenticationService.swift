@@ -12,8 +12,21 @@ struct AuthenticationService: Sendable {
         keychain.storedUsername
     }
 
-    func login(username: String, password: String) async throws {
-        try await scraper.login(username: username, password: password)
+    func login(username: String, password: String) async throws -> LoginResult {
+        let result = try await scraper.login(username: username, password: password)
+        if case .success = result {
+            try keychain.saveCredentials(username: username, password: password)
+        }
+        return result
+    }
+
+    func submitTwoFactorCode(
+        _ code: String,
+        challenge: TwoFactorChallenge,
+        username: String,
+        password: String
+    ) async throws {
+        try await scraper.submitTwoFactorCode(code, challenge: challenge, username: username, password: password)
         try keychain.saveCredentials(username: username, password: password)
     }
 
@@ -35,6 +48,11 @@ struct AuthenticationService: Sendable {
               let password = keychain.storedPassword else {
             return
         }
-        try await scraper.login(username: username, password: password)
+        let result = try await scraper.login(username: username, password: password)
+        if case .twoFactorRequired = result {
+            throw ScraperError.loginFailed(
+                "Session expired — please log in again to complete two-factor authentication"
+            )
+        }
     }
 }
