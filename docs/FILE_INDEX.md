@@ -105,6 +105,12 @@ Complete file-to-purpose mapping for CW Swap. Update this when adding, removing,
 | `Views/Settings/AlertsView.swift` | Alerts management: list, toggle, swipe-to-delete trigger alerts |
 | `Views/Settings/AlertFormView.swift` | Alert creation/edit form: name, keyword, category, source, price range |
 
+## Product Documents
+
+| File | Purpose |
+|------|---------|
+| `docs/sdr-recording-server-prd.md` | PRD for SDR recording server: multi-SDR management, recording, decoding, transcription, RBN tasking, app streaming |
+
 ## Reference Files
 
 | File | Purpose |
